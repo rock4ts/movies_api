@@ -1,5 +1,5 @@
-from typing import List
-from fastapi import APIRouter
+from typing import List, Optional
+from fastapi import APIRouter, Query
 from pydantic import UUID4
 from models.film import Film, FilmDetail
 from models.responses import (
@@ -14,7 +14,28 @@ router = APIRouter()
 @router.get(
     "", response_model=List[Film], summary="Получить список популярных фильмов"
 )
-async def films() -> List[Film]:
+async def films(
+    sort: Optional[str] = Query(
+        None,
+        description="Поле для сортировки, например `-imdb_rating` для сортировки по убыванию рейтинга.",
+        example="-imdb_rating"
+    ),
+    genre: Optional[UUID4] = Query(
+        None,
+        description="UUID жанра для фильтрации списка фильмов."
+    ),
+    page_size: int = Query(
+        50,
+        description="Количество фильмов на странице.",
+        ge=1,
+        le=100
+    ),
+    page_number: int = Query(
+        1,
+        description="Номер страницы.",
+        ge=1
+    )
+) -> List[Film]:
     """
     Эндпоинт для получения списка фильмов 
     с возможностью фильтрации по жанру и сортировке по рейтингу.
