@@ -15,7 +15,7 @@ class FilmDetail(BaseModel):
     title: str
     imdb_rating: Optional[float] = None
     description: Optional[str] = None
-    genre: List[Genre] = []
-    actors: List[Person] = []
-    writers: List[Person] = []
-    directors: List[Person] = []
+    genre: List[Genre]
+    actors: List[Person]
+    writers: List[Person]
+    directors: List[Person]
