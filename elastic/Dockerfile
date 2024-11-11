@@ -1,6 +1,6 @@
 FROM elasticsearch:8.6.2
 
-ENV ES_JAVA_OPTS="-Xms200m -Xmx200m"
+ENV ES_JAVA_OPTS="-Xms512m -Xmx512m"
 ENV discovery.type="single-node"
 ENV path.repo="/usr/share/elasticsearch/snapshots"
 ENV xpack.security.enabled="false"
