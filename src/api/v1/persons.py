@@ -13,7 +13,7 @@ router = APIRouter()
 
 # Mock для эндпоинта /persons/{uuid}/film
 @router.get(
-    "", response_model=List[Film], summary="Фильмы по персоне"
+    "/{uuid}/film", response_model=List[Film], summary="Фильмы по персоне"
 )
 async def persons_films() -> List[Film]:
     """
