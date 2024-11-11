@@ -1,0 +1,12 @@
+volumes:
+  esdata:
+
+services:
+  elastic-db:
+    build: elastic
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+      - ./elastic/es_dump:/usr/share/elasticsearch/snapshots
+    restart: always
