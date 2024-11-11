@@ -2,8 +2,7 @@ volumes:
   esdata:
 
 services:
-  elasticsearch:
-    container_name: elasticsearch
+  elastic-db:
     build: elastic
     ports:
       - "9200:9200"
