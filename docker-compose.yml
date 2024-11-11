@@ -3,7 +3,7 @@ volumes:
 
 services:
   elasticsearch:
-    container_name: api_elasticsearch
+    container_name: elasticsearch
     build:
       context: elastic
       dockerfile: Dockerfile
