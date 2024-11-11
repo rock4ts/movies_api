@@ -4,9 +4,7 @@ volumes:
 services:
   elasticsearch:
     container_name: elasticsearch
-    build:
-      context: elastic
-      dockerfile: Dockerfile
+    build: elastic
     ports:
       - "9200:9200"
     volumes:
