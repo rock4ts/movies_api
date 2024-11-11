@@ -5,6 +5,6 @@ ENV discovery.type="single-node"
 ENV path.repo="/usr/share/elasticsearch/snapshots"
 ENV xpack.security.enabled="false"
 
-COPY elastic/entrypoint.sh /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]

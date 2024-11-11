@@ -5,8 +5,8 @@ services:
   elasticsearch:
     container_name: api_elasticsearch
     build:
-      context: .
-      dockerfile: ./elastic/Dockerfile
+      context: elastic
+      dockerfile: Dockerfile
     ports:
       - "9200:9200"
     volumes:
