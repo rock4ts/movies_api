@@ -4,7 +4,7 @@ from pydantic import BaseModel, UUID4
 
 class PersonFilmList(BaseModel):
     uuid: UUID4
-    roles: Optional[List[str]] = []
+    roles: List[str]
 
 
 class Person(BaseModel):
