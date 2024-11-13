@@ -26,34 +26,90 @@ class PersonService:
             person = await self._get_person_from_elastic(person_id)
             if not person:
                 return None
-            await self._put_person_to_cache(person)
+            # await self._put_person_to_cache(person)
         return person
 
 
     async def _get_person_from_elastic(self, person_uuid: str) -> Optional[Person]:
+        print(f'person_uuid: {type(person_uuid)}')
         try:
             person = await self.elastic.get(index='persons', id=person_uuid)
             films_query = {
-                "query": {
-                    "bool": {
-                        "should": [
-                            {
-                                "nested": {
-                                    "path": "directors",
-                                    "query": {
-                                        "term": {
-                                            "directors.id": person_uuid
+                    "query": {
+                        "bool": {
+                            "should": [
+                                {
+                                    "nested": {
+                                        "path": "directors",
+                                        "query": {
+                                            "term": {
+                                                "directors.id": person_uuid
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "nested": {
+                                        "path": "actors",
+                                        "query": {
+                                            "term": {
+                                                "actors.id": person_uuid
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "nested": {
+                                        "path": "writers",
+                                        "query": {
+                                            "term": {
+                                                "writers.id": person_uuid
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            # {"terms": {"actors.uuid": [str(person_uuid)]}},
-                            # {"terms": {"writers.uuid": [str(person_uuid)]}},
-                            # {"terms": {"directors.uuid": [str(person_uuid)]}}
-                        ]
+                            ]
+                        }
                     }
                 }
-            }
+            # films_query = {
+            #     "query": {
+            #         "bool": {
+            #             "should": [
+            #                 {
+            #                     "nested": {
+            #                         "path": "directors",
+            #                         "query": {
+            #                             "term": {
+            #                                 "directors.id": person_uuid
+            #                             }
+            #                         }
+            #                     }
+            #                 },
+            #                 {
+            #                     "nested": {
+            #                         "path": "writers",
+            #                         "query": {
+            #                             "term": {
+            #                                 "writers.id": person_uuid
+            #                             }
+            #                         }
+            #                     }
+            #                 },
+            #                 {
+            #                     "nested": {
+            #                         "path": "actors",
+            #                         "query": {
+            #                             "term": {
+            #                                 "actors.id": person_uuid
+            #                             }
+            #                         }
+            #                     }
+            #                 }
+            #             ]
+            #         }
+            #     }
+            # }
             films_response = await self.elastic.search(index="movies", body=films_query)
             films = []
             for film in films_response['hits']['hits']:
@@ -73,7 +129,6 @@ class PersonService:
                         roles=roles
                     ))
             person['_source']['films'] = films
-            print(f'-------Person: {person}')
         except NotFoundError:
             return None
         return Person(**person['_source'])
