@@ -10,23 +10,23 @@ from models.film import Film, FilmDetail, Genre, Person
 # Пример ответа для эндпоинта /films/{uuid}
 class FilmDetailResponse:
     body = {
-        "uuid": uuid.uuid4(),
+        "id": uuid.uuid4(),
         "title": "Test Film",
         "imdb_rating": 8.0,
         "description": "A captivating test film description.",
         "genre": [
-            {"uuid": uuid.uuid4(), "name": "Adventure"},
-            {"uuid": uuid.uuid4(), "name": "Comedy"}
+            {"id": uuid.uuid4(), "name": "Adventure"},
+            {"id": uuid.uuid4(), "name": "Comedy"}
         ],
         "actors": [
-            {"uuid": uuid.uuid4(), "full_name": "John Doe"},
-            {"uuid": uuid.uuid4(), "full_name": "Jane Doe"}
+            {"id": uuid.uuid4(), "full_name": "John Doe"},
+            {"id": uuid.uuid4(), "full_name": "Jane Doe"}
         ],
         "writers": [
-            {"uuid": uuid.uuid4(), "full_name": "William Smith"}
+            {"id": uuid.uuid4(), "full_name": "William Smith"}
         ],
         "directors": [
-            {"uuid": uuid.uuid4(), "full_name": "Michael Bay"}
+            {"id": uuid.uuid4(), "full_name": "Michael Bay"}
         ]
     }
     response = FilmDetail(**body)
@@ -35,8 +35,8 @@ class FilmDetailResponse:
 # Пример ответа для эндпоинта /films
 class FilmListResponse:
     body = [
-        {"uuid": uuid.uuid4(), "title": "Film 1", "imdb_rating": 7.5},
-        {"uuid": uuid.uuid4(), "title": "Film 2", "imdb_rating": 8.1}
+        {"id": uuid.uuid4(), "title": "Film 1", "imdb_rating": 7.5},
+        {"id": uuid.uuid4(), "title": "Film 2", "imdb_rating": 8.1}
     ]
     response = [Film(**item) for item in body]
 
@@ -44,9 +44,9 @@ class FilmListResponse:
 # Пример ответа для эндпоинта /genres
 class GenreListResponse:
     body = [
-        {"uuid": uuid.uuid4(), "name": "Adventure"},
-        {"uuid": uuid.uuid4(), "name": "Fantasy"},
-        {"uuid": uuid.uuid4(), "name": "Comedy"}
+        {"id": uuid.uuid4(), "name": "Adventure"},
+        {"id": uuid.uuid4(), "name": "Fantasy"},
+        {"id": uuid.uuid4(), "name": "Comedy"}
     ]
     response = [Genre(**item) for item in body]
 
@@ -54,8 +54,8 @@ class GenreListResponse:
 # Пример ответа для эндпоинта /films/search
 class FilmSearchResponse:
     body = [
-        {"uuid": uuid.uuid4(), "title": "Star Wars", "imdb_rating": 8.7},
-        {"uuid": uuid.uuid4(), "title": "Star Trek", "imdb_rating": 7.8}
+        {"id": uuid.uuid4(), "title": "Star Wars", "imdb_rating": 8.7},
+        {"id": uuid.uuid4(), "title": "Star Trek", "imdb_rating": 7.8}
     ]
     response = [Film(**item) for item in body]
 
@@ -64,14 +64,14 @@ class FilmSearchResponse:
 class PersonSearchResponse:
     body = [
         {
-            "uuid": uuid.uuid4(),
+            "id": uuid.uuid4(),
             "full_name": "Harrison Ford",
-            "films": [{"uuid": uuid.uuid4(), "roles": ["actor"]}]
+            "films": [{"id": uuid.uuid4(), "roles": ["actor"]}]
         },
         {
-            "uuid": uuid.uuid4(),
+            "id": uuid.uuid4(),
             "full_name": "Mark Hamill",
-            "films": [{"uuid": uuid.uuid4(), "roles": ["actor"]}]
+            "films": [{"id": uuid.uuid4(), "roles": ["actor"]}]
         }
     ]
     response = [Person(**item) for item in body]
@@ -80,11 +80,11 @@ class PersonSearchResponse:
 # Пример ответа для эндпоинта /persons/{uuid}
 class PersonDetailResponse:
     body = {
-        "uuid": uuid.uuid4(),
+        "id": uuid.uuid4(),
         "full_name": "George Lucas",
         "films": [
-            {"uuid": uuid.uuid4(), "roles": ["writer"]},
-            {"uuid": uuid.uuid4(), "roles": ["director"]}
+            {"id": uuid.uuid4(), "roles": ["writer"]},
+            {"id": uuid.uuid4(), "roles": ["director"]}
         ]
     }
     response = Person(**body)
@@ -93,8 +93,8 @@ class PersonDetailResponse:
 # Пример ответа для эндпоинта /persons/{uuid}/film
 class PersonFilmListResponse:
     body = [
-        {"uuid": uuid.uuid4(), "title": "Star Wars", "imdb_rating": 8.6},
-        {"uuid": uuid.uuid4(), "title": "Indiana Jones", "imdb_rating": 8.4}
+        {"id": uuid.uuid4(), "title": "Star Wars", "imdb_rating": 8.6},
+        {"id": uuid.uuid4(), "title": "Indiana Jones", "imdb_rating": 8.4}
     ]
     response = [Film(**item) for item in body]
 
@@ -102,7 +102,7 @@ class PersonFilmListResponse:
 # Пример ответа для эндпоинта /genres/{uuid}
 class GenreDetailResponse:
     body = {
-        "uuid": uuid.uuid4(),
+        "id": uuid.uuid4(),
         "name": "Action"
     }
     response = Genre(**body)
