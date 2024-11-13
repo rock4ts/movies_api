@@ -31,7 +31,6 @@ class PersonService:
 
 
     async def _get_person_from_elastic(self, person_uuid: str) -> Optional[Person]:
-        print(f'person_uuid: {type(person_uuid)}')
         try:
             person = await self.elastic.get(index='persons', id=person_uuid)
             films_query = {
@@ -72,44 +71,6 @@ class PersonService:
                         }
                     }
                 }
-            # films_query = {
-            #     "query": {
-            #         "bool": {
-            #             "should": [
-            #                 {
-            #                     "nested": {
-            #                         "path": "directors",
-            #                         "query": {
-            #                             "term": {
-            #                                 "directors.id": person_uuid
-            #                             }
-            #                         }
-            #                     }
-            #                 },
-            #                 {
-            #                     "nested": {
-            #                         "path": "writers",
-            #                         "query": {
-            #                             "term": {
-            #                                 "writers.id": person_uuid
-            #                             }
-            #                         }
-            #                     }
-            #                 },
-            #                 {
-            #                     "nested": {
-            #                         "path": "actors",
-            #                         "query": {
-            #                             "term": {
-            #                                 "actors.id": person_uuid
-            #                             }
-            #                         }
-            #                     }
-            #                 }
-            #             ]
-            #         }
-            #     }
-            # }
             films_response = await self.elastic.search(index="movies", body=films_query)
             films = []
             for film in films_response['hits']['hits']:
@@ -124,10 +85,7 @@ class PersonService:
                     roles.append("director")
 
                 if roles:
-                    films.append(PersonFilmList(
-                        uuid=film_data['id'],
-                        roles=roles
-                    ))
+                    films.append({'id': film_data['id'], 'roles': roles})
             person['_source']['films'] = films
         except NotFoundError:
             return None
