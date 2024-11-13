@@ -1,13 +1,13 @@
 from typing import List, Optional
-from pydantic import BaseModel, UUID4
+from pydantic import BaseModel, UUID4, Field
 
 
 class PersonFilmList(BaseModel):
-    uuid: UUID4
+    uuid: UUID4 = Field(validation_alias='id')
     roles: List[str]
 
 
 class Person(BaseModel):
-    uuid: UUID4
+    uuid: UUID4 = Field(validation_alias='id')
     full_name: str
     films: Optional[List[PersonFilmList]] = []
