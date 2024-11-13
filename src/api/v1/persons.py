@@ -30,7 +30,7 @@ async def person_details(uuid: UUID4, person_service: PersonService = Depends(ge
     person = await person_service.get_by_id(uuid)
     if not person:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='person not found')
-    return Person(id=person.id, title=person.full_name, films=person.films)
+    return Person(uuid=person.uuid, title=person.full_name, films=person.films)
 
 
 @router.get("/search", response_model=List[Person], summary="Поиск по персонам")
