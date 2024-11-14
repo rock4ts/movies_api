@@ -7,6 +7,11 @@ class PersonFilmList(BaseModel):
     roles: List[str]
 
 
+class PersonShort(BaseModel):
+    uuid: UUID4 = Field(validation_alias='id')
+    full_name: str = Field(validation_alias='name')
+
+
 class Person(BaseModel):
     uuid: UUID4 = Field(validation_alias='id')
     full_name: str
