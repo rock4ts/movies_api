@@ -23,3 +23,7 @@ class AsyncElasticRepository(AsyncAbstractRepository):
 
     async def list(self, index, *args, **kwargs):
         pass
+
+
+# Создаю каталог repository в нем под жанры свой репозиторий с неследованием от AsyncElasticRepository
+# Но это только если этот репозиторий будет абстрактным от модели (модель надо переопределять уже в конечном репозитории)
