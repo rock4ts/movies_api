@@ -1,5 +1,5 @@
 from typing import List, Optional
-from pydantic import BaseModel, UUID4, Field
+from pydantic import AliasChoices, BaseModel, UUID4, Field
 
 
 class PersonFilmList(BaseModel):
@@ -8,8 +8,8 @@ class PersonFilmList(BaseModel):
 
 
 class PersonShort(BaseModel):
-    uuid: UUID4 = Field(validation_alias='id')
-    full_name: str = Field(validation_alias='name')
+    uuid: UUID4 = Field(validation_alias=AliasChoices('id', 'uuid'))
+    full_name: str
 
 
 class Person(BaseModel):
