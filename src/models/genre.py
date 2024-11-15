@@ -1,14 +1,13 @@
 from typing import List
-from pydantic import BaseModel, UUID4, Field
+from pydantic import AliasChoices, BaseModel, UUID4, Field
+
+
+validation_choises = AliasChoices('uuid', 'id')
 
 
 class Genre(BaseModel):
-    uuid: UUID4 = Field(alias='id')
+    uuid: UUID4 = Field(validation_alias=validation_choises)
     name: str
-
-    class Config:
-        # Разрешает использование оригинального имени при сериализации
-        allow_population_by_field_name = True
 
 
 # Обёртка для списка жанров
