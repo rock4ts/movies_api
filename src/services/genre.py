@@ -12,33 +12,27 @@ from models.genre import Genre, GenreList
 
 logger = logging.getLogger(__name__)
 
-FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5  # 5 минут
+CACHE_EXPIRE_IN_SECONDS = 60 * 5  # 5 минут
 
 
-# FilmService содержит бизнес-логику по работе с фильмами.
-# Никакой магии тут нет. Обычный класс с обычными методами.
-# Этот класс ничего не знает про DI — максимально сильный и независимый.
 class GenreService:
     def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
         self.redis = redis
         self.elastic = elastic
 
-    # get_all возвращает список объектов. Он опционален, так как жанры могут отсутствовать в базе
+# для эндпоинта /genres
     async def get_all(self) -> Optional[List[Genre]]:
-        logger.debug('Пытаемся получить данные из кеша')
         genres: Optional[GenreList] = await self._genres_from_cache()
         if not genres:
-            logger.debug('Если фильма нет в кеше, то ищем его в Elasticsearch')
             genres: List[Genre] = await self._get_genres_from_elastic()
             if not genres:
-                logger.error('Если он отсутствует в Elasticsearch, значит жанров вообще нет в базе')
+                logger.error('Elasticsearch. Not found')
                 return None
-            logger.debug('Сохраняем фильм в кеш')
             await self._put_genres_to_cache(genres)
             genres = GenreList(genres=genres)
         return genres.genres
 
-    async def _get_genres_from_elastic(self) -> Optional[GenreList]:
+    async def _get_genres_from_elastic(self) -> List[Genre]:
         try:
             docs = await self.elastic.search(
                 index='genres',
@@ -47,7 +41,6 @@ class GenreService:
             )
         except NotFoundError:
             return None
-        logger.debug('get_genres_from_elastic = sucess')
 
         hits: List[dict] = docs['hits']['hits']
         genres_list = [Genre(**hit['_source']) for hit in hits]
@@ -68,13 +61,48 @@ class GenreService:
         # https://redis.io/commands/set/
         # pydantic позволяет сериализовать модель в json
         genre_list = GenreList(genres=genres)
-        await self.redis.set("genres", genre_list.model_dump_json(by_alias=True), FILM_CACHE_EXPIRE_IN_SECONDS)
+        await self.redis.set(
+            "genres", genre_list.model_dump_json(), CACHE_EXPIRE_IN_SECONDS
+        )
+
+# для эндпоинта /genres/{uuid}
+    async def get_by_id(self, uuid: str) -> Optional[Genre]:
+        genre = await self._genre_from_cache(uuid)
+        if not genre:
+            genre = await self._get_genre_from_elastic(uuid)
+            if not genre:
+                logger.error('Elasticsearch. Not found')
+                return None
+            await self._put_genre_to_cache(genre)
+
+        return genre
+
+    async def _get_genre_from_elastic(self, uuid: str) -> Optional[Genre]:
+        try:
+            doc = await self.elastic.get(index='genres', id=uuid)
+        except NotFoundError:
+            return None
+        return Genre(**doc['_source'])
+
+    async def _genre_from_cache(self, uuid: str) -> Optional[Genre]:
+        # Пытаемся получить данные о фильме из кеша, используя команду get
+        # https://redis.io/commands/get/
+        data = await self.redis.get(uuid)
+        if not data:
+            return None
+
+        return Genre.model_validate_json(data)
+
+    async def _put_genre_to_cache(self, genre: Genre):
+        # Сохраняем данные о фильме, используя команду set
+        # Выставляем время жизни кеша — 5 минут
+        # https://redis.io/commands/set/
+        # pydantic позволяет сериализовать модель в json
+        await self.redis.set(
+            str(genre.uuid), genre.model_dump_json(), CACHE_EXPIRE_IN_SECONDS
+        )
 
 
-# get_genres_service — это провайдер FilmService. 
-# С помощью Depends он сообщает, что ему необходимы Redis и Elasticsearch
-# Для их получения вы ранее создали функции-провайдеры в модуле db
-# Используем lru_cache-декоратор, чтобы создать объект сервиса в едином экземпляре (синглтона)
 @lru_cache()
 def get_genre_service(
         redis: Redis = Depends(get_redis),
