@@ -3,6 +3,14 @@ from logging import config as logging_config
 
 from core.logger import LOGGING
 
+<<<<<<< Updated upstream
+=======
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
+if DEBUG:
+    from dotenv import load_dotenv
+    load_dotenv()
+
+>>>>>>> Stashed changes
 # Применяем настройки логирования
 logging_config.dictConfig(LOGGING)
 
