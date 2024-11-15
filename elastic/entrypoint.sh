@@ -16,7 +16,7 @@ if [ ! -f /usr/share/elasticsearch/initialized ]; then
   }'
   echo 'Repository created. Restoring indices...'
 
-  curl -X POST 'http://localhost:9200/_snapshot/my_backup/snapshot_2/_restore' -H 'Content-Type: application/json' -d'
+  curl -X POST 'http://localhost:9200/_snapshot/my_backup/snapshot/_restore' -H 'Content-Type: application/json' -d'
   {
     "indices": "movies,genres,persons",
     "ignore_unavailable": true,
