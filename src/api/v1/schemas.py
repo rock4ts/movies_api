@@ -1,4 +1,5 @@
 from typing import Optional
+
 from fastapi import Depends
 from pydantic import UUID4, BaseModel, Field
 
@@ -23,4 +24,12 @@ class FilmListParams(BaseModel):
 
 
 class FilmSearchParams(FilmListParams):
+    query: Optional[str] = None
+
+
+class PersonListParams(BaseModel):
+    pagination_params: PaginationParams = Depends()
+
+
+class PersonSearchParams(PersonListParams):
     query: Optional[str] = None
