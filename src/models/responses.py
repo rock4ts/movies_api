@@ -4,7 +4,7 @@ All these examples will be returned as 200 response by default.
 TODO delete this file after finished service implementation!
 """
 import uuid
-from models.film import Film, FilmDetail, Genre, Person
+import models
 
 
 # Пример ответа для эндпоинта /films/{uuid}
@@ -14,22 +14,22 @@ class FilmDetailResponse:
         "title": "Test Film",
         "imdb_rating": 8.0,
         "description": "A captivating test film description.",
-        "genre": [
+        "genres": [
             {"id": uuid.uuid4(), "name": "Adventure"},
             {"id": uuid.uuid4(), "name": "Comedy"}
         ],
         "actors": [
-            {"id": uuid.uuid4(), "full_name": "John Doe"},
-            {"id": uuid.uuid4(), "full_name": "Jane Doe"}
+            {"id": uuid.uuid4(), "name": "John Doe"},
+            {"id": uuid.uuid4(), "name": "Jane Doe"}
         ],
         "writers": [
-            {"id": uuid.uuid4(), "full_name": "William Smith"}
+            {"id": uuid.uuid4(), "name": "William Smith"}
         ],
         "directors": [
-            {"id": uuid.uuid4(), "full_name": "Michael Bay"}
+            {"id": uuid.uuid4(), "name": "Michael Bay"}
         ]
     }
-    response = FilmDetail(**body)
+    response = models.FilmDetail(**body)
 
 
 # Пример ответа для эндпоинта /films
@@ -38,7 +38,7 @@ class FilmListResponse:
         {"id": uuid.uuid4(), "title": "Film 1", "imdb_rating": 7.5},
         {"id": uuid.uuid4(), "title": "Film 2", "imdb_rating": 8.1}
     ]
-    response = [Film(**item) for item in body]
+    response = [models.Film(**item) for item in body]
 
 
 # Пример ответа для эндпоинта /genres
@@ -48,7 +48,7 @@ class GenreListResponse:
         {"id": uuid.uuid4(), "name": "Fantasy"},
         {"id": uuid.uuid4(), "name": "Comedy"}
     ]
-    response = [Genre(**item) for item in body]
+    response = [models.Genre(**item) for item in body]
 
 
 # Пример ответа для эндпоинта /films/search
@@ -57,7 +57,7 @@ class FilmSearchResponse:
         {"id": uuid.uuid4(), "title": "Star Wars", "imdb_rating": 8.7},
         {"id": uuid.uuid4(), "title": "Star Trek", "imdb_rating": 7.8}
     ]
-    response = [Film(**item) for item in body]
+    response = [models.Film(**item) for item in body]
 
 
 # Пример ответа для эндпоинта /persons/search
@@ -74,7 +74,7 @@ class PersonSearchResponse:
             "films": [{"id": uuid.uuid4(), "roles": ["actor"]}]
         }
     ]
-    response = [Person(**item) for item in body]
+    response = [models.Person(**item) for item in body]
 
 
 # Пример ответа для эндпоинта /persons/{uuid}
@@ -87,7 +87,7 @@ class PersonDetailResponse:
             {"id": uuid.uuid4(), "roles": ["director"]}
         ]
     }
-    response = Person(**body)
+    response = models.Person(**body)
 
 
 # Пример ответа для эндпоинта /persons/{uuid}/film
@@ -96,7 +96,7 @@ class PersonFilmListResponse:
         {"id": uuid.uuid4(), "title": "Star Wars", "imdb_rating": 8.6},
         {"id": uuid.uuid4(), "title": "Indiana Jones", "imdb_rating": 8.4}
     ]
-    response = [Film(**item) for item in body]
+    response = [models.Film(**item) for item in body]
 
 
 # Пример ответа для эндпоинта /genres/{uuid}
@@ -105,4 +105,4 @@ class GenreDetailResponse:
         "id": uuid.uuid4(),
         "name": "Action"
     }
-    response = Genre(**body)
+    response = models.Genre(**body)
