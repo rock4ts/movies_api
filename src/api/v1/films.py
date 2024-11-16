@@ -4,10 +4,11 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import UUID4
 
-from api.utils import create_film_search_params
+from api.v1.utils import create_film_search_params
 from models.film import Film, FilmDetail
-from services.film import FilmService, get_film_service
-from .models import FilmListParams, FilmSearchParams
+from services.film import FilmService
+from .dependencies import get_film_service
+from .schemas import FilmListParams, FilmSearchParams
 
 
 router = APIRouter()

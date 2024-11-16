@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Optional
 from fastapi import Depends
 from pydantic import UUID4, BaseModel, Field
 
@@ -24,11 +24,3 @@ class FilmListParams(BaseModel):
 
 class FilmSearchParams(FilmListParams):
     query: Optional[str] = None
-
-
-class FilmElasticParams(BaseModel):
-    sorts: list[dict[str, Any]]
-    filters: list[dict[str, Any]]
-    musts: list[dict[str, Any]]
-    from_: int = 0
-    size: int = 50

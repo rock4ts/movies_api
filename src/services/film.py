@@ -1,24 +1,12 @@
-from functools import lru_cache
 from typing import Optional
 
 from elasticsearch import AsyncElasticsearch, NotFoundError
-from fastapi import Depends
 from redis.asyncio import Redis
 
-from api.v1.models import FilmElasticParams
-from db.elastic import get_elastic
-from db.redis import get_redis
 from models.film import Film, FilmDetail
+from .schemas import ElasticSearchParams
 
 FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5
-
-
-@lru_cache()
-def get_film_service(
-        redis: Redis = Depends(get_redis),
-        elastic: AsyncElasticsearch = Depends(get_elastic),
-) -> 'FilmService':
-    return FilmService(redis, elastic)
 
 
 class FilmService:
@@ -26,12 +14,12 @@ class FilmService:
         self.redis = redis
         self.elastic = elastic
 
-    async def get_films(self, search_params: FilmElasticParams) -> list[Film]:
+    async def get_films(self, search_params: ElasticSearchParams) -> list[Film]:
         films = await self._get_films_from_elastic(search_params)
 
         return films
 
-    async def _get_films_from_elastic(self, search_params: FilmElasticParams) -> list[Film]:
+    async def _get_films_from_elastic(self, search_params: ElasticSearchParams) -> list[Film]:
         body = {
             "query": {
                 "bool": {
@@ -65,7 +53,7 @@ class FilmService:
             doc = await self.elastic.get(index='movies', id=film_id)
         except NotFoundError:
             return None
-        print(doc['_source'])
+
         return FilmDetail(**doc['_source'])
 
     async def _film_from_cache(self, film_id: str) -> Optional[FilmDetail]:

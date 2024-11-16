@@ -2,13 +2,14 @@
 
 from typing import Union
 
-from api.v1.models import FilmListParams, FilmElasticParams, FilmSearchParams
+from api.v1.schemas import FilmListParams, FilmSearchParams
+from services.schemas import ElasticSearchParams
 
 
 async def create_film_search_params(
         query_params: Union[FilmListParams | FilmSearchParams]
-        ) -> FilmElasticParams:
-    search_params = FilmElasticParams(
+        ) -> ElasticSearchParams:
+    search_params = ElasticSearchParams(
         sorts=[], filters=[], musts=[], from_=0, size=50
         )
 
