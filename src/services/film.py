@@ -1,84 +1,116 @@
 from functools import lru_cache
-from typing import Optional
+import logging
+from typing import Optional, Union
 
-from elasticsearch import AsyncElasticsearch, NotFoundError
 from fastapi import Depends
+from pydantic import UUID4
 from redis.asyncio import Redis
 
-from api.v1.models import FilmElasticParams
+from api.v1.schemas import FilmListParams, FilmSearchParams
 from db.elastic import get_elastic
 from db.redis import get_redis
-from models.film import Film, FilmDetail
+from db.repository import AsyncRedisRepository, AsyncElasticRepository
+from models.film import Film, FilmDetail, FilmList
+from .schemas import ElasticSearchParams
+
 
 FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
 
 @lru_cache()
-def get_film_service(
-        redis: Redis = Depends(get_redis),
-        elastic: AsyncElasticsearch = Depends(get_elastic),
-) -> 'FilmService':
-    return FilmService(redis, elastic)
+def get_film_service(redis: Redis = Depends(get_redis),
+                     elastic: AsyncElasticRepository = Depends(get_elastic)
+                     ) -> 'FilmService':
+    redis_repo = AsyncRedisRepository(redis, FILM_CACHE_EXPIRE_IN_SECONDS)
+    elastic_repo = AsyncElasticRepository(elastic, 'movies')
+
+    return FilmService(redis_repo, elastic_repo)
 
 
 class FilmService:
-    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
-        self.redis = redis
-        self.elastic = elastic
 
-    async def get_films(self, search_params: FilmElasticParams) -> list[Film]:
-        films = await self._get_films_from_elastic(search_params)
+    logger = logging.getLogger(__name__)
 
-        return films
+    def __init__(self,
+                 _redis_repo: AsyncRedisRepository,
+                 _elastic_repo: AsyncElasticRepository):
+        self._redis_repo = _redis_repo
+        self._elastic_repo = _elastic_repo
 
-    async def _get_films_from_elastic(self, search_params: FilmElasticParams) -> list[Film]:
-        body = {
-            "query": {
-                "bool": {
-                    "filter": search_params.filters,
-                    "must": search_params.musts,
-                }
-            },
-            "sort": search_params.sorts,
-            "from": search_params.from_,
-            "size": search_params.size,
-        }
+    async def get_films(self,
+                        query_params: Union[FilmListParams | FilmSearchParams]
+                        ) -> FilmList:
+        redis_key = self._create_redis_key(
+            self._elastic_repo.index,
+            query_params
+            )
+        film_list = await self._redis_repo.get(redis_key, FilmList)
+        if not film_list:
+            self.logger.info(f"Could not find cached films by {redis_key}")
+            search_params = self._create_elastic_search_params(query_params)
+            film_list = await self._elastic_repo.list(search_params, FilmList)
+            if not film_list:
+                self.logger.info(f"Could not find films by params {redis_key}")
+                return FilmList(films=[])
 
-        response = await self.elastic.search(index='movies', body=body)
-        films = [Film(**doc['_source']) for doc in response['hits']['hits']]
+            await self._redis_repo.save(redis_key, film_list)
 
-        return films
+        return film_list
 
-    # TODO
-    async def get_film_by_id(self, film_id: str) -> Optional[FilmDetail]:
-        # film = await self._film_from_cache(film_id)
-        # if not film:
-            film = await self._get_film_from_elastic(film_id)
+    async def get_film_by_id(self,
+                             film_id: UUID4
+                             ) -> Optional[FilmDetail]:
+        redis_key = f"{self._elastic_repo.index}:{film_id}"
+        film = await self._redis_repo.get(redis_key, FilmDetail)
+        if not film:
+            self.logger.info(f"Could not find cached films by {redis_key}")
+            film = await self._elastic_repo.get(film_id, FilmDetail)
             if not film:
+                self.logger.info(f"Could not find film {film_id}")
                 return None
-            # await self._put_film_to_cache(film)
-
-            return film
-
-    async def _get_film_from_elastic(self, film_id: str) -> Optional[FilmDetail]:
-        try:
-            doc = await self.elastic.get(index='movies', id=film_id)
-        except NotFoundError:
-            return None
-        print(doc['_source'])
-        return FilmDetail(**doc['_source'])
-
-    async def _film_from_cache(self, film_id: str) -> Optional[FilmDetail]:
-        data = await self.redis.get(film_id)
-        if not data:
-            return None
-        film = Film.model_validate_json(data)
+            await self._redis_repo.save(redis_key, film)
 
         return film
 
-    async def _put_film_to_cache(self, film: FilmDetail):
-        await self.redis.set(
-            film.uuid,
-            film.model_dump_json(),
-            FILM_CACHE_EXPIRE_IN_SECONDS
-            )
+    def _create_elastic_search_params(
+        self,
+        query_params: Union[FilmListParams | FilmSearchParams]
+        ) -> ElasticSearchParams:
+        search_params = ElasticSearchParams()
+
+        if query_params.pagination_params:
+            search_params.from_ = (
+                query_params.pagination_params.page_number - 1
+                ) * query_params.pagination_params.page_size
+            search_params.size = query_params.pagination_params.page_size
+
+        if query_params.sort:
+            sort_field = query_params.sort.lstrip('-')
+            sort_order = "desc" if query_params.sort.startswith('-') else "asc"
+            search_params.sorts.append({sort_field: {"order": sort_order}})
+
+        if query_params.genre_id:
+            search_params.filters.append({
+                "nested": {
+                    "path": "genres",
+                    "query": {"bool": {
+                        "must": [{ "term": {"genres.id": query_params.genre_id}}]
+                        }
+                    }
+                }
+            })
+        if isinstance(query_params, FilmSearchParams) and query_params.query:
+            search_params.musts.append(
+                {"match": {"title": {"query": query_params.query}}}
+                )
+
+        return search_params
+
+    def _create_redis_key(
+            self,
+            index: str,
+            query_params: Union[FilmListParams, FilmSearchParams]) -> str:
+        vals = list(map(str, query_params.model_dump(mode='json').values()))
+        vals.sort()
+        key = f"{index}:" + ':'.join(vals)
+        return key
