@@ -4,7 +4,6 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import UUID4
 
-from api.v1.utils import create_film_search_params
 from models.film import Film, FilmDetail
 from services.film import FilmService
 from .dependencies import get_film_service
@@ -24,8 +23,7 @@ async def films(
     Эндпоинт для получения списка фильмов 
     с возможностью фильтрации по жанру и сортировке по рейтингу.
     """
-    search_params = await create_film_search_params(query_params)
-    films = await film_service.get_films(search_params)
+    films = await film_service.get_films(query_params)
     return films
 
 
@@ -40,8 +38,7 @@ async def films_search(
     """
     Эндпоинт для поиска фильмов по ключевым словам.
     """
-    search_params = await create_film_search_params(query_params)
-    films = await film_service.get_films(search_params)
+    films = await film_service.get_films(query_params)
     return films
 
 

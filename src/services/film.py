@@ -1,8 +1,9 @@
-from typing import Optional
+from typing import Optional, Union
 
 from elasticsearch import AsyncElasticsearch, NotFoundError
 from redis.asyncio import Redis
 
+from api.v1.schemas import FilmListParams, FilmSearchParams
 from models.film import Film, FilmDetail
 from .schemas import ElasticSearchParams
 
@@ -14,7 +15,11 @@ class FilmService:
         self.redis = redis
         self.elastic = elastic
 
-    async def get_films(self, search_params: ElasticSearchParams) -> list[Film]:
+    async def get_films(
+            self,
+            query_params: Union[FilmListParams | FilmSearchParams]
+            ) -> list[Film]:
+        search_params = self._create_elastic_search_params(query_params)
         films = await self._get_films_from_elastic(search_params)
 
         return films
@@ -70,3 +75,37 @@ class FilmService:
             film.model_dump_json(),
             FILM_CACHE_EXPIRE_IN_SECONDS
             )
+
+    def _create_elastic_search_params(
+        self,
+        query_params: Union[FilmListParams | FilmSearchParams]
+        ) -> ElasticSearchParams:
+        search_params = ElasticSearchParams()
+
+        if query_params.pagination_params:
+            search_params.from_ = (
+                query_params.pagination_params.page_number - 1
+                ) * query_params.pagination_params.page_size
+            search_params.size = query_params.pagination_params.page_size
+
+        if query_params.sort:
+            sort_field = query_params.sort.lstrip('-')
+            sort_order = "desc" if query_params.sort.startswith('-') else "asc"
+            search_params.sorts.append({sort_field: {"order": sort_order}})
+
+        if query_params.genre_id:
+            search_params.filters.append({
+                "nested": {
+                    "path": "genres",
+                    "query": {"bool": {
+                        "must": [{ "term": {"genres.id": query_params.genre_id}}]
+                        }
+                    }
+                }
+            })
+
+        if isinstance(query_params, FilmSearchParams) and query_params.query:
+            search_params.musts.append(
+                {"match": {"title": {"query": query_params.query}}}
+                )
+        return search_params
