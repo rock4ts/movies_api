@@ -1,4 +1,5 @@
 from typing import Optional
+
 from fastapi import Depends
 from pydantic import UUID4, BaseModel, Field, model_serializer
 
