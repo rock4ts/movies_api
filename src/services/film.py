@@ -1,3 +1,4 @@
+
 import logging
 from typing import Optional, Union
 
@@ -6,10 +7,11 @@ from pydantic import UUID4
 from api.v1.schemas import FilmListParams, FilmSearchParams
 from db.repository import AsyncRedisRepository, AsyncElasticRepository
 from models.film import FilmDetail, FilmList
+from .base import BaseService
 from .schemas import ElasticSearchParams
 
 
-class FilmService:
+class FilmService(BaseService):
 
     logger = logging.getLogger(__name__)
 
@@ -42,7 +44,7 @@ class FilmService:
     async def get_film_by_id(self,
                              film_id: UUID4
                              ) -> Optional[FilmDetail]:
-        redis_key = f"{self._elastic_repo.index}:{film_id}"
+        redis_key = self._create_redis_key(self._elastic_repo.index, [film_id])
         film = await self._redis_repo.get(redis_key, FilmDetail)
         if not film:
             self.logger.info(f"Could not find cached films by {redis_key}")
@@ -54,6 +56,7 @@ class FilmService:
 
         return film
 
+    # TODO потенциально и это можно вынести в BaseService
     def _create_elastic_search_params(
         self,
         query_params: Union[FilmListParams | FilmSearchParams]
@@ -88,11 +91,3 @@ class FilmService:
 
         return search_params
 
-    def _create_redis_key(
-            self,
-            index: str,
-            query_params: Union[FilmListParams, FilmSearchParams]) -> str:
-        vals = list(map(str, query_params.model_dump(mode='json').values()))
-        vals.sort()
-        key = f"{index}:" + ':'.join(vals)
-        return key
