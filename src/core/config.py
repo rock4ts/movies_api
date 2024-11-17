@@ -3,14 +3,6 @@ from logging import config as logging_config
 
 from core.logger import LOGGING
 
-<<<<<<< Updated upstream
-=======
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
-if DEBUG:
-    from dotenv import load_dotenv
-    load_dotenv()
-
->>>>>>> Stashed changes
 # Применяем настройки логирования
 logging_config.dictConfig(LOGGING)
 
@@ -24,6 +16,7 @@ REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
 # Настройки Elasticsearch
 ELASTIC_HOST = os.getenv('ELASTIC_HOST', 'http://127.0.0.1')
 ELASTIC_PORT = int(os.getenv('ELASTIC_PORT', 9200))
+ELASTIC_URL = f"http://{ELASTIC_HOST}:{ELASTIC_PORT}"
 
 # Корень проекта
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

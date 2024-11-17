@@ -1,81 +1,62 @@
+
+import logging
 from typing import Optional, Union
 
-from elasticsearch import AsyncElasticsearch, NotFoundError
-from redis.asyncio import Redis
+from pydantic import UUID4
 
 from api.v1.schemas import FilmListParams, FilmSearchParams
-from models.film import Film, FilmDetail
+from db.repository import AsyncRedisRepository, AsyncElasticRepository
+from models.film import FilmDetail, FilmList
+from .base import BaseService
 from .schemas import ElasticSearchParams
 
-FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
+class FilmService(BaseService):
 
-class FilmService:
-    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
-        self.redis = redis
-        self.elastic = elastic
+    logger = logging.getLogger(__name__)
 
-    async def get_films(
-            self,
-            query_params: Union[FilmListParams | FilmSearchParams]
-            ) -> list[Film]:
-        search_params = self._create_elastic_search_params(query_params)
-        films = await self._get_films_from_elastic(search_params)
+    def __init__(self,
+                 _redis_repo: AsyncRedisRepository,
+                 _elastic_repo: AsyncElasticRepository):
+        self._redis_repo = _redis_repo
+        self._elastic_repo = _elastic_repo
 
-        return films
+    async def get_films(self,
+                        query_params: Union[FilmListParams | FilmSearchParams]
+                        ) -> FilmList:
+        redis_key = self._create_redis_key(
+            self._elastic_repo.index,
+            query_params
+            )
+        film_list = await self._redis_repo.get(redis_key, FilmList)
+        if not film_list:
+            self.logger.info(f"Could not find cached films by {redis_key}")
+            search_params = self._create_elastic_search_params(query_params)
+            film_list = await self._elastic_repo.list(search_params, FilmList)
+            if not film_list.items:
+                self.logger.info(f"Could not find films by params {redis_key}")
+                return film_list
 
-    async def _get_films_from_elastic(self, search_params: ElasticSearchParams) -> list[Film]:
-        body = {
-            "query": {
-                "bool": {
-                    "filter": search_params.filters,
-                    "must": search_params.musts,
-                }
-            },
-            "sort": search_params.sorts,
-            "from": search_params.from_,
-            "size": search_params.size,
-        }
+            await self._redis_repo.save(redis_key, film_list)
 
-        response = await self.elastic.search(index='movies', body=body)
-        films = [Film(**doc['_source']) for doc in response['hits']['hits']]
+        return film_list
 
-        return films
-
-    # TODO
-    async def get_film_by_id(self, film_id: str) -> Optional[FilmDetail]:
-        # film = await self._film_from_cache(film_id)
-        # if not film:
-            film = await self._get_film_from_elastic(film_id)
+    async def get_film_by_id(self,
+                             film_id: UUID4
+                             ) -> Optional[FilmDetail]:
+        redis_key = self._create_redis_key(self._elastic_repo.index, [film_id])
+        film = await self._redis_repo.get(redis_key, FilmDetail)
+        if not film:
+            self.logger.info(f"Could not find cached film by {redis_key}")
+            film = await self._elastic_repo.get(film_id, FilmDetail)
             if not film:
+                self.logger.info(f"Could not find film {film_id}")
                 return None
-            # await self._put_film_to_cache(film)
-
-            return film
-
-    async def _get_film_from_elastic(self, film_id: str) -> Optional[FilmDetail]:
-        try:
-            doc = await self.elastic.get(index='movies', id=film_id)
-        except NotFoundError:
-            return None
-
-        return FilmDetail(**doc['_source'])
-
-    async def _film_from_cache(self, film_id: str) -> Optional[FilmDetail]:
-        data = await self.redis.get(film_id)
-        if not data:
-            return None
-        film = Film.model_validate_json(data)
+            await self._redis_repo.save(redis_key, film)
 
         return film
 
-    async def _put_film_to_cache(self, film: FilmDetail):
-        await self.redis.set(
-            film.uuid,
-            film.model_dump_json(),
-            FILM_CACHE_EXPIRE_IN_SECONDS
-            )
-
+    # TODO потенциально и это можно вынести в BaseService
     def _create_elastic_search_params(
         self,
         query_params: Union[FilmListParams | FilmSearchParams]
@@ -103,9 +84,10 @@ class FilmService:
                     }
                 }
             })
-
         if isinstance(query_params, FilmSearchParams) and query_params.query:
             search_params.musts.append(
                 {"match": {"title": {"query": query_params.query}}}
                 )
+
         return search_params
+

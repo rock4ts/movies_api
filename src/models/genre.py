@@ -6,7 +6,7 @@ validation_choises = AliasChoices('uuid', 'id')
 
 
 class Genre(BaseModel):
-    uuid: UUID4 = Field(validation_alias=validation_choises)
+    uuid: UUID4 = Field(validation_alias=AliasChoices('id', 'uuid'))
     name: str
 
 

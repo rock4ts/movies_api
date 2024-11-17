@@ -9,10 +9,14 @@ class PersonFilmList(BaseModel):
 
 class PersonShort(BaseModel):
     uuid: UUID4 = Field(validation_alias=AliasChoices('id', 'uuid'))
-    full_name: str
+    full_name: str = Field(validation_alias=AliasChoices('name', 'full_name'))
 
 
 class Person(BaseModel):
     uuid: UUID4 = Field(validation_alias=AliasChoices('id', 'uuid'))
     full_name: str
     films: Optional[List[PersonFilmList]] = []
+
+
+class PersonList(BaseModel):
+    items: List[Person] = None

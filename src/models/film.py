@@ -1,21 +1,28 @@
 from typing import List, Optional
-from pydantic import BaseModel, UUID4, Field
-from models.genre import Genre
-from models.person import PersonShort
+
+from pydantic import AliasChoices, Field, UUID4
+
+from .base import Item, ItemList
+from .genre import Genre
+from .person import PersonShort
 
 
-class Film(BaseModel):
-    uuid: UUID4 = Field(validation_alias='id')
+class Film(Item):
+    uuid: UUID4 = Field(validation_alias=AliasChoices('id', 'uuid'))
     title: str
     imdb_rating: Optional[float] = None
 
 
-class FilmDetail(BaseModel):
-    uuid: UUID4 = Field(validation_alias='id')
+class FilmList(ItemList):
+    items: list[Film] = []
+
+
+class FilmDetail(Item):
+    uuid: UUID4 = Field(validation_alias=AliasChoices('id', 'uuid'))
     title: str
     imdb_rating: Optional[float] = None
     description: Optional[str] = None
-    genre: List[Genre] = Field(validation_alias='genres')
+    genre: List[Genre] = Field(validation_alias=AliasChoices('genres', 'genre'))
     actors: List[PersonShort]
     writers: List[PersonShort]
     directors: List[PersonShort]

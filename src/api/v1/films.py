@@ -1,3 +1,4 @@
+import logging
 from http import HTTPStatus
 from typing import List
 
@@ -9,8 +10,10 @@ from services.film import FilmService
 from .dependencies import get_film_service
 from .schemas import FilmListParams, FilmSearchParams
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
 
 @router.get("/",
             response_model=List[Film],
@@ -23,8 +26,8 @@ async def films(
     Эндпоинт для получения списка фильмов 
     с возможностью фильтрации по жанру и сортировке по рейтингу.
     """
-    films = await film_service.get_films(query_params)
-    return films
+    film_list = await film_service.get_films(query_params)
+    return film_list.items
 
 
 @router.get("/search",
@@ -38,8 +41,8 @@ async def films_search(
     """
     Эндпоинт для поиска фильмов по ключевым словам.
     """
-    films = await film_service.get_films(query_params)
-    return films
+    film_list = await film_service.get_films(query_params)
+    return film_list.items
 
 
 @router.get("/{film_id}",
@@ -58,4 +61,5 @@ async def film_details(
             status_code=HTTPStatus.NOT_FOUND,
             detail='film not found'
             )
+
     return film
