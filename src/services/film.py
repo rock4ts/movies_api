@@ -33,9 +33,9 @@ class FilmService(BaseService):
             self.logger.info(f"Could not find cached films by {redis_key}")
             search_params = self._create_elastic_search_params(query_params)
             film_list = await self._elastic_repo.list(search_params, FilmList)
-            if not film_list:
+            if not film_list.items:
                 self.logger.info(f"Could not find films by params {redis_key}")
-                return FilmList(films=[])
+                return film_list
 
             await self._redis_repo.save(redis_key, film_list)
 
@@ -47,7 +47,7 @@ class FilmService(BaseService):
         redis_key = self._create_redis_key(self._elastic_repo.index, [film_id])
         film = await self._redis_repo.get(redis_key, FilmDetail)
         if not film:
-            self.logger.info(f"Could not find cached films by {redis_key}")
+            self.logger.info(f"Could not find cached film by {redis_key}")
             film = await self._elastic_repo.get(film_id, FilmDetail)
             if not film:
                 self.logger.info(f"Could not find film {film_id}")
