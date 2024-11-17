@@ -9,9 +9,39 @@ services:
     volumes:
       - esdata:/usr/share/elasticsearch/data
       - ./elastic/es_dump:/usr/share/elasticsearch/snapshots
+    healthcheck:
+      test: curl -s http://elastic-db:9200  >/dev/null || exit 1
+      interval: 20s
+      timeout: 20s
+      retries: 5
     restart: always
 
   redis:
     image: redis:alpine
     ports:
       - "6379:6379"
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - 8000:8000      
+    depends_on:
+      elastic-db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: always
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./src/core:/etc/nginx/conf.d:ro
+    depends_on:
+      - fastapi
