@@ -37,3 +37,11 @@ class FilmSearchParams(FilmListParams):
         examples=['star'],
         description="Поле для полнотекстового поиска по названию фильма."
     )
+
+
+class PersonListParams(BaseModel):
+    pagination_params: PaginationParams = Depends()
+
+
+class PersonSearchParams(PersonListParams):
+    query: Optional[str] = None
