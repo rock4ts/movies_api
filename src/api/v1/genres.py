@@ -23,11 +23,6 @@ async def genres(
     Эндпоинт для получения списка всех жанров
     """
     genres = await genre_service.get_all()
-    if not genres:
-        raise fastapi.HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail='genres not found'
-        )
-
     return genres
 
 

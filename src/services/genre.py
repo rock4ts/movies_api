@@ -26,8 +26,8 @@ class GenreService:
         if not genres:
             genres = await self._get_genres_from_elastic()
             if not genres:
-                logger.error('Elasticsearch. Not found')
-                return None
+                logger.warning('Elasticsearch. Data not found')
+                return []
             await self._put_genres_to_cache(genres)
             # genres = GenreList(genres=genres)
         return genres.genres
@@ -94,8 +94,9 @@ class GenreService:
         # Выставляем время жизни кеша — 5 минут
         # https://redis.io/commands/set/
         # pydantic позволяет сериализовать модель в json
+        cache_id = f"genres:{genre.uuid}"
         await self.redis.set(
-            str(genre.uuid), genre.model_dump_json(), CACHE_EXPIRE_IN_SECONDS
+            cache_id, genre.model_dump_json(), CACHE_EXPIRE_IN_SECONDS
         )
 
 
