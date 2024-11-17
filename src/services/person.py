@@ -114,7 +114,8 @@ class PersonService:
                                 }
                             }
                         }
-                    ]
+                    ],
+                "minimum_should_match": 1
                 }
             }
         }
