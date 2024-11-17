@@ -1,5 +1,5 @@
-from functools import lru_cache
 import logging
+from functools import lru_cache
 from typing import List, Optional
 
 from elasticsearch import AsyncElasticsearch, NotFoundError

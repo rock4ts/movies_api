@@ -5,8 +5,9 @@ from typing import Optional, Union
 from pydantic import UUID4
 
 from api.v1.schemas import FilmListParams, FilmSearchParams
-from db.repository import AsyncRedisRepository, AsyncElasticRepository
+from db.repository import AsyncElasticRepository, AsyncRedisRepository
 from models.film import FilmDetail, FilmList
+
 from .base import BaseService
 from .schemas import ElasticSearchParams
 

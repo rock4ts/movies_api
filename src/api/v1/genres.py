@@ -1,11 +1,12 @@
+import logging
 from http import HTTPStatus
 from typing import List
+
 import fastapi
 from pydantic import UUID4
-import logging
+
 from models.genre import Genre
 from services.genre import GenreService, get_genre_service
-
 
 logger = logging.getLogger(__name__)
 

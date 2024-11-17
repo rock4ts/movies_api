@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from pydantic import AliasChoices, Field, UUID4
+from pydantic import UUID4, AliasChoices, Field
 
 from .base import Item, ItemList
 from .genre import Genre

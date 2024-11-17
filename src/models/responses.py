@@ -4,6 +4,7 @@ All these examples will be returned as 200 response by default.
 TODO delete this file after finished service implementation!
 """
 import uuid
+
 import models
 
 

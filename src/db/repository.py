@@ -1,8 +1,8 @@
 import abc
-from typing import Union, Type
+from typing import Type, Union
 
 from elasticsearch import AsyncElasticsearch, NotFoundError
-from pydantic import BaseModel, UUID4
+from pydantic import UUID4, BaseModel
 from redis.asyncio import Redis
 
 from models.base import Item, ItemList

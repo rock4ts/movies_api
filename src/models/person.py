@@ -1,5 +1,6 @@
 from typing import List, Optional
-from pydantic import AliasChoices, BaseModel, UUID4, Field
+
+from pydantic import UUID4, AliasChoices, BaseModel, Field
 
 
 class PersonFilmList(BaseModel):

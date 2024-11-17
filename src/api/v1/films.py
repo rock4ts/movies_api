@@ -7,6 +7,7 @@ from pydantic import UUID4
 
 from models.film import Film, FilmDetail
 from services.film import FilmService
+
 from .dependencies import get_film_service
 from .schemas import FilmListParams, FilmSearchParams
 

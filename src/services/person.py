@@ -9,20 +9,22 @@ from redis.asyncio import Redis
 from api.v1.schemas import PersonListParams, PersonSearchParams
 from db.elastic import get_elastic
 from db.redis import get_redis
-from models.film import Film, FilmList
+from models.film import FilmList
 from models.person import Person, PersonFilmList, PersonList
-from services.schemas import PersonElasticParams
 from services.base import BaseService
+from services.schemas import PersonElasticParams
 
 PERSON_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
 
 class PersonService(BaseService):
-    def __init__(self,  redis: Redis, elastic: AsyncElasticsearch):
+    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
         self.redis = redis
         self.elastic = elastic
 
-    async def get_persons(self, query_params: PersonSearchParams) -> PersonList:
+    async def get_persons(
+        self, query_params: PersonSearchParams
+    ) -> PersonList:
         redis_key = self._create_redis_key('persons', query_params)
         person_list = await self._get_cached(redis_key, PersonList)
         if not person_list:
@@ -53,7 +55,9 @@ class PersonService(BaseService):
             await self._save_to_cache(redis_key, person)
         return person
 
-    async def _get_person_from_elastic(self, person_uuid: str) -> Optional[Person]:
+    async def _get_person_from_elastic(
+        self, person_uuid: str
+    ) -> Optional[Person]:
         try:
             person = await self.elastic.get(index='persons', id=person_uuid)
             films = await self._get_film_roles_by_person(person_uuid)
@@ -62,7 +66,9 @@ class PersonService(BaseService):
             return None
         return Person(**person['_source'])
 
-    async def _get_persons_from_elastic(self, search_params: PersonElasticParams) -> PersonList:
+    async def _get_persons_from_elastic(
+        self, search_params: PersonElasticParams
+    ) -> PersonList:
         body = {
             "query": {
                 "bool": {
@@ -72,19 +78,24 @@ class PersonService(BaseService):
             "from": search_params.from_,
             "size": search_params.size,
         }
-        persons_response = await self.elastic.search(index='persons', body=body)
+        persons_response = await self.elastic.search(
+            index='persons', body=body
+        )
         for person in persons_response.body['hits']['hits']:
             person_uuid = person['_id']
             films = await self._get_film_roles_by_person(person_uuid)
             person['_source']['films'] = films
 
-        persons = [Person(**person['_source']) for person in persons_response.body['hits']['hits']]
+        persons = [
+            Person(**person['_source'])
+            for person in persons_response.body['hits']['hits']
+        ]
         return PersonList(items=persons)
 
     async def _get_films_by_person_from_elastic(
             self,
             person_uuid: str
-            ) -> FilmList:
+    ) -> FilmList:
         films = await self._search_films_by_person(person_uuid)
         return FilmList(items=films)
 
@@ -128,7 +139,9 @@ class PersonService(BaseService):
                 }
             }
         }
-        films_response = await self.elastic.search(index="movies", body=films_query)
+        films_response = await self.elastic.search(
+            index="movies", body=films_query
+        )
         films = [film['_source'] for film in films_response['hits']['hits']]
         return films
 
@@ -151,17 +164,21 @@ class PersonService(BaseService):
         data = await self.redis.get(person_id)
         if not data:
             return None
-        person = Person.parse_raw(data)
+        person = Person.model_validate_json(data)
         return person
 
     async def _put_person_to_cache(self, person: Person):
-        await self.redis.set(person.id, person.json(), PERSON_CACHE_EXPIRE_IN_SECONDS)
+        await self.redis.set(
+            person.id, person.model_dump_json(), PERSON_CACHE_EXPIRE_IN_SECONDS
+        )
 
-    async def _get_cached(self, key: str, model: Type[BaseModel]) -> Optional[Person]:
+    async def _get_cached(
+        self, key: str, model: Type[BaseModel]
+    ) -> Optional[Person]:
         json_data = await self.redis.get(key)
         if not json_data:
             return None
-        
+
         model_data = model.model_validate_json(json_data)
         return model_data
 
@@ -170,25 +187,26 @@ class PersonService(BaseService):
             key,
             model_data.model_dump_json(),
             PERSON_CACHE_EXPIRE_IN_SECONDS
-            )
+        )
 
     def _create_person_search_params(
-    self,
-    query_params: Union[PersonListParams | PersonSearchParams]) -> PersonElasticParams:
+        self,
+        query_params: Union[PersonListParams | PersonSearchParams]
+    ) -> PersonElasticParams:
         search_params = PersonElasticParams(
             musts=[], from_=0, size=50
-            )
+        )
 
         if query_params.pagination_params:
             search_params.from_ = (
                 query_params.pagination_params.page_number - 1
-                ) * query_params.pagination_params.page_size
+            ) * query_params.pagination_params.page_size
             search_params.size = query_params.pagination_params.page_size
 
         if isinstance(query_params, PersonSearchParams) and query_params.query:
             search_params.musts.append(
                 {"match": {"full_name": {"query": query_params.query}}}
-                )
+            )
         return search_params
 
 
