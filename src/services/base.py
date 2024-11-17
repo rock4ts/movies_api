@@ -5,8 +5,9 @@ from pydantic import BaseModel
 
 
 class BaseService(abc.ABC):
+
     def _create_redis_key(self,
-                          index: str,
+                          prefix: str,
                           params: Union[list, BaseModel]) -> str:
         if isinstance(params, BaseModel):
             vals = list(map(str, params.model_dump(mode='json').values()))
@@ -14,6 +15,6 @@ class BaseService(abc.ABC):
             vals = list(map(str, params))
 
         vals.sort()
-        key = f"{index}:" + ':'.join(vals)
+        key = f"{prefix}:" + ':'.join(vals)
 
         return key
