@@ -1,4 +1,4 @@
-LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s: %(message)s'
+LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 LOG_DEFAULT_HANDLERS = ['console', ]
 
 # В логгере настраивается логгирование uvicorn-сервера.
@@ -43,19 +43,19 @@ LOGGING = {
     'loggers': {
         '': {
             'handlers': LOG_DEFAULT_HANDLERS,
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'uvicorn.error': {
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'uvicorn.access': {
             'handlers': ['access'],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
     },
     'root': {
-        'level': 'DEBUG',
+        'level': 'INFO',
         'formatter': 'verbose',
         'handlers': LOG_DEFAULT_HANDLERS,
     },

@@ -21,30 +21,26 @@ class GenreService:
         self.elastic = elastic
 
 # для эндпоинта /genres
-    async def get_all(self) -> Optional[List[Genre]]:
+    async def get_all(self) -> Optional[GenreList]:
         genres: Optional[GenreList] = await self._genres_from_cache()
         if not genres:
-            genres: List[Genre] = await self._get_genres_from_elastic()
+            genres = await self._get_genres_from_elastic()
             if not genres:
                 logger.error('Elasticsearch. Not found')
                 return None
             await self._put_genres_to_cache(genres)
-            genres = GenreList(genres=genres)
+            # genres = GenreList(genres=genres)
         return genres.genres
 
-    async def _get_genres_from_elastic(self) -> List[Genre]:
-        try:
-            docs = await self.elastic.search(
-                index='genres',
-                query={"match_all": {}},
-                size=20,
-            )
-        except NotFoundError:
-            return None
-
+    async def _get_genres_from_elastic(self) -> GenreList:
+        docs = await self.elastic.search(
+            index='genres',
+            query={"match_all": {}},
+            size=20,
+        )
         hits: List[dict] = docs['hits']['hits']
         genres_list = [Genre(**hit['_source']) for hit in hits]
-        return genres_list
+        return GenreList(genres=genres_list)
 
     async def _genres_from_cache(self) -> Optional[GenreList]:
         # Пытаемся получить данные о фильме из кеша, используя команду get
@@ -55,14 +51,14 @@ class GenreService:
 
         return GenreList.model_validate_json(data)
 
-    async def _put_genres_to_cache(self, genres: List[Genre]):
+    async def _put_genres_to_cache(self, genres: GenreList):
         # Сохраняем данные о жанрах, используя команду set
         # Выставляем время жизни кеша — 5 минут
         # https://redis.io/commands/set/
         # pydantic позволяет сериализовать модель в json
-        genre_list = GenreList(genres=genres)
+        # genre_list = GenreList(genres=genres)
         await self.redis.set(
-            "genres", genre_list.model_dump_json(), CACHE_EXPIRE_IN_SECONDS
+            "genres", genres.model_dump_json(), CACHE_EXPIRE_IN_SECONDS
         )
 
 # для эндпоинта /genres/{uuid}
