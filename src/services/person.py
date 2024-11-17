@@ -1,48 +1,56 @@
 from functools import lru_cache
-from typing import List, Optional, Union
+from typing import List, Optional, Type, Union
 
 from elasticsearch import AsyncElasticsearch, NotFoundError
 from fastapi import Depends
+from pydantic import BaseModel
 from redis.asyncio import Redis
 
 from api.v1.schemas import PersonListParams, PersonSearchParams
 from db.elastic import get_elastic
 from db.redis import get_redis
-from models.film import Film, FilmDetail
-from models.person import Person, PersonFilmList
+from models.film import Film, FilmList
+from models.person import Person, PersonFilmList, PersonList
 from services.schemas import PersonElasticParams
+from services.base import BaseService
 
 PERSON_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
 
-class PersonService:
+class PersonService(BaseService):
     def __init__(self,  redis: Redis, elastic: AsyncElasticsearch):
         self.redis = redis
         self.elastic = elastic
 
-    async def get_persons(self, query_params: PersonSearchParams) -> List[Person]:
-        search_params = self._create_person_search_params(query_params)
-        persons = await self._get_persons_from_elastic(search_params)
-        return persons
+    async def get_persons(self, query_params: PersonSearchParams) -> PersonList:
+        redis_key = self._create_redis_key('persons', query_params)
+        person_list = await self._get_cached(redis_key, PersonList)
+        if not person_list:
+            search_params = self._create_person_search_params(query_params)
+            person_list = await self._get_persons_from_elastic(search_params)
+            if not person_list.items:
+                return person_list
+            await self._save_to_cache(redis_key, person_list)
+        return person_list
 
-    async def get_films_by_person(self, person_uuid: str) -> List[Film]:
-        # films = await self._films_by_person_from_cache(person_id) # TODO исправить эту и след строчки после реализации кэша
-        films = None
+    async def get_films_by_person(self, person_uuid: str) -> FilmList:
+        redis_key = self._create_redis_key('persons:films', [person_uuid])
+        films = await self._get_cached(redis_key, FilmList)
         if not films:
             films = await self._get_films_by_person_from_elastic(person_uuid)
             if not films:
                 return None
-            # await self._put_films_by_person_to_cache(person_uuid, films)
+            await self._save_to_cache(redis_key, films)
         return films
 
     async def get_person_by_id(self, person_uuid: str) -> Optional[Person]:
-        # person = await self._person_from_cache(person_id) # TODO исправить эту и след строчки после реализации кэша
-        person = None
+        redis_key = self._create_redis_key('persons', [person_uuid])
+        person = await self._get_cached(redis_key, Person)
         if not person:
             person = await self._get_person_from_elastic(person_uuid)
             if not person:
                 return None
-            # await self._put_person_to_cache(person)
+            await self._save_to_cache(redis_key, person)
         return person
 
     async def _get_person_from_elastic(self, person_uuid: str) -> Optional[Person]:
@@ -54,7 +62,7 @@ class PersonService:
             return None
         return Person(**person['_source'])
 
-    async def _get_persons_from_elastic(self, search_params: PersonElasticParams) -> List[Person]:
+    async def _get_persons_from_elastic(self, search_params: PersonElasticParams) -> PersonList:
         body = {
             "query": {
                 "bool": {
@@ -70,14 +78,15 @@ class PersonService:
             films = await self._get_film_roles_by_person(person_uuid)
             person['_source']['films'] = films
 
-        return [Person(**person['_source']) for person in persons_response.body['hits']['hits']]
+        persons = [Person(**person['_source']) for person in persons_response.body['hits']['hits']]
+        return PersonList(items=persons)
 
-    async def _get_films_by_person_from_elastic(self, person_uuid: str) -> Optional[PersonFilmList]:
-        try:
-            films = await self._search_films_by_person(person_uuid)
-        except NotFoundError:
-            return None
-        return films
+    async def _get_films_by_person_from_elastic(
+            self,
+            person_uuid: str
+            ) -> FilmList:
+        films = await self._search_films_by_person(person_uuid)
+        return FilmList(items=films)
 
     async def _search_films_by_person(self, person_uuid: str) -> List:
         films_query = {
@@ -148,15 +157,20 @@ class PersonService:
     async def _put_person_to_cache(self, person: Person):
         await self.redis.set(person.id, person.json(), PERSON_CACHE_EXPIRE_IN_SECONDS)
 
-    async def _films_by_person_from_cache(self, person_uuid: str) -> Optional[Person]:
-        data = await self.redis.get(f'{person_uuid}/films')
-        if not data:
+    async def _get_cached(self, key: str, model: Type[BaseModel]) -> Optional[Person]:
+        json_data = await self.redis.get(key)
+        if not json_data:
             return None
-        # TODO json magic
-        return data
+        
+        model_data = model.model_validate_json(json_data)
+        return model_data
 
-    async def _put_films_by_person_to_cache(self, person_uuid: str, films: [Film]):
-        await self.redis.set(f'{person_uuid}/films', films.json(), PERSON_CACHE_EXPIRE_IN_SECONDS)
+    async def _save_to_cache(self, key: str, model_data: BaseModel):
+        await self.redis.set(
+            key,
+            model_data.model_dump_json(),
+            PERSON_CACHE_EXPIRE_IN_SECONDS
+            )
 
     def _create_person_search_params(
     self,

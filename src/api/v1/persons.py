@@ -20,7 +20,7 @@ async def person_search(query_params: PersonSearchParams = Depends(),
     Эндпоинт для поиска актеров, режиссеров и сценаристов.
     """
     persons = await person_service.get_persons(query_params)
-    return persons
+    return persons.items
 
 
 @router.get("/{uuid}/film", response_model=List[Film], summary="Фильмы по персоне")
@@ -33,7 +33,7 @@ async def persons_films(uuid: UUID4,
         films = await person_service.get_films_by_person(uuid)
     except NotFoundError:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='person not found')
-    return films
+    return films.items
 
 
 @router.get("/{uuid}", response_model=Person, summary="Данные по персоне")

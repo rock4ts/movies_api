@@ -91,7 +91,7 @@ class PersonDetailResponse:
 
 
 # Пример ответа для эндпоинта /persons/{uuid}/film
-class PersonFilmListResponse:
+class FilmListResponse:
     body = [
         {"id": uuid.uuid4(), "title": "Star Wars", "imdb_rating": 8.6},
         {"id": uuid.uuid4(), "title": "Indiana Jones", "imdb_rating": 8.4}
