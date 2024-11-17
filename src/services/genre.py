@@ -83,7 +83,7 @@ class GenreService:
     async def _genre_from_cache(self, uuid: str) -> Optional[Genre]:
         # Пытаемся получить данные о фильме из кеша, используя команду get
         # https://redis.io/commands/get/
-        data = await self.redis.get(uuid)
+        data = await self.redis.get(f"genres:{uuid}")
         if not data:
             return None
 
