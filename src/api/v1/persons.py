@@ -1,6 +1,7 @@
 from http import HTTPStatus
 from typing import List
 
+from elasticsearch import NotFoundError
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import UUID4
 
@@ -28,8 +29,9 @@ async def persons_films(uuid: UUID4,
     """
     Все фильмы по персоне
     """
-    films = await person_service.get_films_by_person(uuid)
-    if not films:
+    try:
+        films = await person_service.get_films_by_person(uuid)
+    except NotFoundError:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='person not found')
     return films
 

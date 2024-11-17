@@ -8,7 +8,7 @@ from redis.asyncio import Redis
 from api.v1.schemas import PersonListParams, PersonSearchParams
 from db.elastic import get_elastic
 from db.redis import get_redis
-from models.film import Film
+from models.film import Film, FilmDetail
 from models.person import Person, PersonFilmList
 from services.schemas import PersonElasticParams
 
@@ -25,7 +25,7 @@ class PersonService:
         persons = await self._get_persons_from_elastic(search_params)
         return persons
 
-    async def get_films_by_person(self, person_uuid: str) -> Optional[PersonFilmList]:
+    async def get_films_by_person(self, person_uuid: str) -> List[Film]:
         # films = await self._films_by_person_from_cache(person_id) # TODO исправить эту и след строчки после реализации кэша
         films = None
         if not films:
@@ -33,7 +33,7 @@ class PersonService:
             if not films:
                 return None
             # await self._put_films_by_person_to_cache(person_uuid, films)
-        return [Film(**film) for film in films]
+        return films
 
     async def get_person_by_id(self, person_uuid: str) -> Optional[Person]:
         # person = await self._person_from_cache(person_id) # TODO исправить эту и след строчки после реализации кэша
@@ -134,7 +134,7 @@ class PersonService:
             if any(director['id'] == str(person_uuid) for director in film.get('directors', [])):
                 roles.append("director")
             if roles:
-                film_roles.append({'id': film['id'], 'roles': roles})
+                film_roles.append(PersonFilmList(id=film['id'], roles=roles))
         return film_roles
 
     async def _person_from_cache(self, person_id: str) -> Optional[Person]:
