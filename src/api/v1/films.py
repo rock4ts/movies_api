@@ -1,6 +1,5 @@
 import logging
 from http import HTTPStatus
-from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import UUID4
@@ -17,12 +16,12 @@ router = APIRouter()
 
 
 @router.get("/",
-            response_model=List[Film],
+            response_model=list[Film],
             summary="Получить список популярных фильмов")
 async def films(
     query_params: FilmListParams = Depends(),
     film_service: FilmService = Depends(get_film_service),
-    ) -> List[Film]:
+    ) -> list[Film]:
     """
     Эндпоинт для получения списка фильмов 
     с возможностью фильтрации по жанру и сортировке по рейтингу.
@@ -32,13 +31,13 @@ async def films(
 
 
 @router.get("/search",
-            response_model=List[Film],
+            response_model=list[Film],
             summary="Найти фильмы по имени",
             tags=['Полнотекстовый поиск'])
 async def films_search(
     query_params: FilmSearchParams = Depends(),
     film_service: FilmService = Depends(get_film_service)
-    ) -> List[Film]:
+    ) -> list[Film]:
     """
     Эндпоинт для поиска фильмов по ключевым словам.
     """

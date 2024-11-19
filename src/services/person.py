@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import List, Optional, Type, Union
+from typing import Type, Union
 
 from elasticsearch import AsyncElasticsearch, NotFoundError
 from fastapi import Depends
@@ -45,7 +45,7 @@ class PersonService(BaseService):
             await self._save_to_cache(redis_key, films)
         return films
 
-    async def get_person_by_id(self, person_uuid: str) -> Optional[Person]:
+    async def get_person_by_id(self, person_uuid: str) -> Person|None:
         redis_key = self._create_redis_key('persons', [person_uuid])
         person = await self._get_cached(redis_key, Person)
         if not person:
@@ -57,7 +57,7 @@ class PersonService(BaseService):
 
     async def _get_person_from_elastic(
         self, person_uuid: str
-    ) -> Optional[Person]:
+    ) -> Person|None:
         try:
             person = await self.elastic.get(index='persons', id=person_uuid)
             films = await self._get_film_roles_by_person(person_uuid)
@@ -99,7 +99,7 @@ class PersonService(BaseService):
         films = await self._search_films_by_person(person_uuid)
         return FilmList(items=films)
 
-    async def _search_films_by_person(self, person_uuid: str) -> List:
+    async def _search_films_by_person(self, person_uuid: str) -> list:
         films_query = {
             "query": {
                 "bool": {
@@ -160,7 +160,7 @@ class PersonService(BaseService):
                 film_roles.append(PersonFilmList(id=film['id'], roles=roles))
         return film_roles
 
-    async def _person_from_cache(self, person_id: str) -> Optional[Person]:
+    async def _person_from_cache(self, person_id: str) -> Person|None:
         data = await self.redis.get(person_id)
         if not data:
             return None
@@ -174,7 +174,7 @@ class PersonService(BaseService):
 
     async def _get_cached(
         self, key: str, model: Type[BaseModel]
-    ) -> Optional[Person]:
+    ) -> Person|None:
         json_data = await self.redis.get(key)
         if not json_data:
             return None

@@ -1,6 +1,6 @@
 
 import logging
-from typing import Optional, Union
+from typing import Union
 
 from pydantic import UUID4
 
@@ -44,7 +44,7 @@ class FilmService(BaseService):
 
     async def get_film_by_id(self,
                              film_id: UUID4
-                             ) -> Optional[FilmDetail]:
+                             ) -> FilmDetail|None:
         redis_key = self._create_redis_key(self._elastic_repo.index, [film_id])
         film = await self._redis_repo.get(redis_key, FilmDetail)
         if not film:

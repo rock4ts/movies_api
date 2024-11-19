@@ -1,5 +1,4 @@
 from http import HTTPStatus
-from typing import List
 
 from elasticsearch import NotFoundError
 from fastapi import APIRouter, Depends, HTTPException
@@ -13,9 +12,9 @@ from services.person import PersonService, get_person_service
 router = APIRouter()
 
 
-@router.get("/search", response_model=List[Person], summary="Поиск по персонам")
+@router.get("/search", response_model=list[Person], summary="Поиск по персонам")
 async def person_search(query_params: PersonSearchParams = Depends(),
-                        person_service: PersonService = Depends(get_person_service)) -> List[Person]:
+                        person_service: PersonService = Depends(get_person_service)) -> list[Person]:
     """
     Эндпоинт для поиска актеров, режиссеров и сценаристов.
     """
@@ -23,9 +22,9 @@ async def person_search(query_params: PersonSearchParams = Depends(),
     return persons.items
 
 
-@router.get("/{uuid}/film", response_model=List[Film], summary="Фильмы по персоне")
+@router.get("/{uuid}/film", response_model=list[Film], summary="Фильмы по персоне")
 async def persons_films(uuid: UUID4,
-                        person_service: PersonService = Depends(get_person_service)) -> List[Film]:
+                        person_service: PersonService = Depends(get_person_service)) -> list[Film]:
     """
     Все фильмы по персоне
     """

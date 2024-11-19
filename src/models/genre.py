@@ -1,5 +1,3 @@
-from typing import List
-
 from pydantic import UUID4, AliasChoices, BaseModel, Field
 
 validation_choises = AliasChoices('uuid', 'id')
@@ -12,4 +10,4 @@ class Genre(BaseModel):
 
 # Обёртка для списка жанров
 class GenreList(BaseModel):
-    genres: List[Genre]
+    genres: list[Genre]

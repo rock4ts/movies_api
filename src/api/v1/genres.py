@@ -1,6 +1,5 @@
 import logging
 from http import HTTPStatus
-from typing import List
 
 import fastapi
 from pydantic import UUID4
@@ -15,11 +14,11 @@ router = fastapi.APIRouter()
 
 # для эндпоинта /genres
 @router.get(
-    "", response_model=List[Genre], summary="Список жанров",
+    "", response_model=list[Genre], summary="Список жанров",
 )
 async def genres(
     genre_service: GenreService = fastapi.Depends(get_genre_service)
-) -> List[Genre]:
+) -> list[Genre]:
     """
     Эндпоинт для получения списка всех жанров
     """

@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -6,11 +6,11 @@ ListDictAny = list[dict[str, Any]]
 
 
 class ElasticSearchParams(BaseModel):
-    sorts: Optional[ListDictAny] = []
-    filters: Optional[ListDictAny] = []
-    musts: Optional[ListDictAny] = []
-    from_: Optional[int] = 0
-    size: Optional[int] = 50
+    sorts: ListDictAny|None = []
+    filters: ListDictAny|None = []
+    musts: ListDictAny|None = []
+    from_: int|None = 0
+    size: int|None = 50
 
 
 class PersonElasticParams(BaseModel):
