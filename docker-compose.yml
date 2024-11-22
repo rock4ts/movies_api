@@ -22,7 +22,10 @@ services:
       context: .
       dockerfile: Dockerfile
     env_file:
-      - .env     
+      - .env
+    environment:
+      - ELASTIC_HOST=elastic-db
+      - REDIS_HOST=redis
     depends_on:
       elastic-db:
         condition: service_healthy

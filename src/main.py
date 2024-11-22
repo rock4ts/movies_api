@@ -21,7 +21,7 @@ async def lifespan(app: FastAPI):
         host=settings.redis_host, port=settings.redis_port
     )
     elastic.es = AsyncElasticsearch(
-        hosts=[f'{settings.elastic_host}:{settings.elastic_port}']
+        hosts=[settings.elastic_url]
     )
     logging.info('Lifespan started')
     yield
