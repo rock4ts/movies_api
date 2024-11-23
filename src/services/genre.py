@@ -1,6 +1,5 @@
 import logging
 from functools import lru_cache
-from typing import List, Optional
 
 from elasticsearch import AsyncElasticsearch, NotFoundError
 from fastapi import Depends
@@ -21,8 +20,8 @@ class GenreService:
         self.elastic = elastic
 
 # для эндпоинта /genres
-    async def get_all(self) -> Optional[GenreList]:
-        genres: Optional[GenreList] = await self._genres_from_cache()
+    async def get_all(self) -> GenreList|None:
+        genres: GenreList|None = await self._genres_from_cache()
         if not genres:
             genres = await self._get_genres_from_elastic()
             if not genres:
@@ -38,14 +37,14 @@ class GenreService:
             query={"match_all": {}},
             size=20,
         )
-        hits: List[dict] = docs['hits']['hits']
+        hits: list[dict] = docs['hits']['hits']
         genres_list = [Genre(**hit['_source']) for hit in hits]
         return GenreList(genres=genres_list)
 
-    async def _genres_from_cache(self) -> Optional[GenreList]:
+    async def _genres_from_cache(self) -> GenreList|None:
         # Пытаемся получить данные о фильме из кеша, используя команду get
         # https://redis.io/commands/get/
-        data: List[Genre] = await self.redis.get("genres")
+        data: list[Genre] = await self.redis.get("genres")
         if not data:
             return None
 
@@ -62,7 +61,7 @@ class GenreService:
         )
 
 # для эндпоинта /genres/{uuid}
-    async def get_by_id(self, uuid: str) -> Optional[Genre]:
+    async def get_by_id(self, uuid: str) -> Genre|None:
         genre = await self._genre_from_cache(uuid)
         if not genre:
             genre = await self._get_genre_from_elastic(uuid)
@@ -73,14 +72,14 @@ class GenreService:
 
         return genre
 
-    async def _get_genre_from_elastic(self, uuid: str) -> Optional[Genre]:
+    async def _get_genre_from_elastic(self, uuid: str) -> Genre|None:
         try:
             doc = await self.elastic.get(index='genres', id=uuid)
         except NotFoundError:
             return None
         return Genre(**doc['_source'])
 
-    async def _genre_from_cache(self, uuid: str) -> Optional[Genre]:
+    async def _genre_from_cache(self, uuid: str) -> Genre|None:
         # Пытаемся получить данные о фильме из кеша, используя команду get
         # https://redis.io/commands/get/
         data = await self.redis.get(f"genres:{uuid}")

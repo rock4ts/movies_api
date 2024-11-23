@@ -32,4 +32,4 @@ cd src && fastapi dev main.py
 
 Наш сервис поддерживает документацию OpenAPI Swagger по адресу:
 
-http://127.0.0.1:8000/api/openapi
+http://127.0.0.1/api/openapi

@@ -4,8 +4,6 @@ volumes:
 services:
   elastic-db:
     build: elastic
-    ports:
-      - "9200:9200"
     volumes:
       - esdata:/usr/share/elasticsearch/data
       - ./elastic/es_dump:/usr/share/elasticsearch/snapshots
@@ -14,12 +12,10 @@ services:
       interval: 20s
       timeout: 20s
       retries: 5
-    restart: always
+    restart: unless-stopped 
 
   redis:
     image: redis:alpine
-    ports:
-      - "6379:6379"
 
   fastapi:
     build:
@@ -27,14 +23,15 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
-    ports:
-      - 8000:8000      
+    environment:
+      - ELASTIC_HOST=elastic-db
+      - REDIS_HOST=redis
     depends_on:
       elastic-db:
         condition: service_healthy
       redis:
         condition: service_started
-    restart: always
+    restart: unless-stopped 
 
   nginx:
     image: nginx:latest
@@ -45,3 +42,4 @@ services:
       - ./src/core:/etc/nginx/conf.d:ro
     depends_on:
       - fastapi
+    restart: unless-stopped
