@@ -1,8 +1,23 @@
 # Async_API_sprint_1_team
 
+Проектная работа четвёртого спринта
+
+https://github.com/mletunenko/Async_API_sprint_1_team
+
+
 # Запуск приложения
 
-1. Активировать venv
+## Docker-compose
+
+1. Создать .env по образцу
+2. Выполнить команды:
+```bash
+make build && make up
+```
+
+## Локальный запуск
+
+1. Активировать venv и создать .env по образцу
 2. Установить зависимости
 ```bash
 pip install --upgrade pip && pip install -r requirements.txt
@@ -17,24 +32,4 @@ cd src && fastapi dev main.py
 
 Наш сервис поддерживает документацию OpenAPI Swagger по адресу:
 
-http://127.0.0.1:8000/api/openapi
-
-
-# App details
-
-## Models
-
-### Film
-
-### Genre
-
-### Person
-
-### Filter params models
-
-https://fastapi.tiangolo.com/tutorial/query-param-models/
-
-
-## API
-
-### v1
+http://127.0.0.1/api/openapi

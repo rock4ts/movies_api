@@ -1,13 +1,21 @@
-from typing import List, Optional
-from pydantic import BaseModel, UUID4, Field
+from pydantic import UUID4, AliasChoices, BaseModel, Field
 
 
 class PersonFilmList(BaseModel):
-    uuid: UUID4 = Field(validation_alias='id')
-    roles: List[str]
+    uuid: UUID4 = Field(validation_alias=AliasChoices('id', 'uuid'))
+    roles: list[str]
+
+
+class PersonShort(BaseModel):
+    uuid: UUID4 = Field(validation_alias=AliasChoices('id', 'uuid'))
+    full_name: str = Field(validation_alias=AliasChoices('name', 'full_name'))
 
 
 class Person(BaseModel):
-    uuid: UUID4 = Field(validation_alias='id')
+    uuid: UUID4 = Field(validation_alias=AliasChoices('id', 'uuid'))
     full_name: str
-    films: Optional[List[PersonFilmList]] = []
+    films: list[PersonFilmList]|None = []
+
+
+class PersonList(BaseModel):
+    items: list[Person] = None
