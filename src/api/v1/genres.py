@@ -1,15 +1,17 @@
 import logging
 from http import HTTPStatus
 
-import fastapi
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import UUID4
 
 from models.genre import Genre
-from services.genre import GenreService, get_genre_service
+from services.genre import GenreService
+
+from .dependencies import get_genre_service
 
 logger = logging.getLogger(__name__)
 
-router = fastapi.APIRouter()
+router = APIRouter()
 
 
 # для эндпоинта /genres
@@ -17,29 +19,29 @@ router = fastapi.APIRouter()
     "", response_model=list[Genre], summary="Список жанров",
 )
 async def genres(
-    genre_service: GenreService = fastapi.Depends(get_genre_service)
+    genre_service: GenreService = Depends(get_genre_service)
 ) -> list[Genre]:
     """
     Эндпоинт для получения списка всех жанров
     """
-    genres = await genre_service.get_all()
-    return genres
+    genres_list = await genre_service.get_genres()
+    return genres_list.items
 
 
 # для эндпоинта /genres/{uuid}
 @router.get(
-    "/{uuid}", response_model=Genre, summary="Данные по конкретному жанру"
+    "/{genre_id}", response_model=Genre, summary="Данные по конкретному жанру"
 )
 async def genre_details(
-    uuid: UUID4,
-    genre_service: GenreService = fastapi.Depends(get_genre_service)
+    genre_id: UUID4,
+    genre_service: GenreService = Depends(get_genre_service)
 ) -> Genre:
     """
     Детали по жанру
     """
-    genre = await genre_service.get_by_id(str(uuid))
+    genre = await genre_service.get_genre_by_id(str(genre_id))
     if not genre:
-        raise fastapi.HTTPException(
+        raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail='genre not found'
         )
 

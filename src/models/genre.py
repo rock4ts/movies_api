@@ -10,4 +10,4 @@ class Genre(BaseModel):
 
 # Обёртка для списка жанров
 class GenreList(BaseModel):
-    genres: list[Genre]
+    items: list[Genre]

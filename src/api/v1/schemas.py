@@ -43,3 +43,7 @@ class PersonListParams(BaseModel):
 
 class PersonSearchParams(PersonListParams):
     query: str|None = None
+
+
+class GenresListParams(BaseModel):
+    query: str|None = None

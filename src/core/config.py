@@ -1,4 +1,11 @@
+from logging import config as logging_config
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from core.logger import LOGGING
+
+# Применяем настройки логирования
+logging_config.dictConfig(LOGGING)
 
 
 class Settings(BaseSettings):
@@ -8,6 +15,7 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     elastic_host: str = '127.0.0.1'
     elastic_port: int = 9200
+    debug: bool = False
 
     @property
     def elastic_url(self):
