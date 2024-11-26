@@ -22,7 +22,14 @@ make build && make up
 ```bash
 pip install --upgrade pip && pip install -r requirements.txt
 ```
-3. Запуск приложения
+3. Используйте docker-compose.yml 
+Так же поднятие контейнеров с сервисами для локальной работы доступны через 
+```bash
+make dev-build && make dev-up
+```
+4. Переменные окружения в конфиге по умолчанию для локального запуска.
+
+5. Запуск приложения
 
 ```bash
 cd src && fastapi dev main.py

@@ -17,3 +17,7 @@ class PersonElasticParams(BaseModel):
     musts: list[dict[str, Any]]
     from_: int = 0
     size: int = 50
+
+
+class GenresElasticParams(ElasticSearchParams):
+    pass

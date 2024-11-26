@@ -1,107 +1,65 @@
 import logging
-from functools import lru_cache
 
-from elasticsearch import AsyncElasticsearch, NotFoundError
-from fastapi import Depends
-from redis.asyncio import Redis
+from pydantic import UUID4
 
-from db.elastic import get_elastic
-from db.redis import get_redis
+from db.repository import AsyncElasticRepository, AsyncRedisRepository
 from models.genre import Genre, GenreList
 
-logger = logging.getLogger(__name__)
+from .base import BaseService
+from .schemas import GenresElasticParams
 
 CACHE_EXPIRE_IN_SECONDS = 60 * 5  # 5 минут
 
 
-class GenreService:
-    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
-        self.redis = redis
-        self.elastic = elastic
+class GenreService(BaseService):
+
+    logger = logging.getLogger(__name__)
+
+    def __init__(self,
+                 _redis_repo: AsyncRedisRepository,
+                 _elastic_repo: AsyncElasticRepository):
+        self._redis_repo = _redis_repo
+        self._elastic_repo = _elastic_repo
 
 # для эндпоинта /genres
-    async def get_all(self) -> GenreList|None:
-        genres: GenreList|None = await self._genres_from_cache()
-        if not genres:
-            genres = await self._get_genres_from_elastic()
-            if not genres:
-                logger.warning('Elasticsearch. Data not found')
-                return []
-            await self._put_genres_to_cache(genres)
-            # genres = GenreList(genres=genres)
-        return genres.genres
-
-    async def _get_genres_from_elastic(self) -> GenreList:
-        docs = await self.elastic.search(
-            index='genres',
-            query={"match_all": {}},
-            size=20,
+    async def get_genres(self) -> GenreList|None:
+        redis_key = self._create_redis_key(
+            self._elastic_repo.index
         )
-        hits: list[dict] = docs['hits']['hits']
-        genres_list = [Genre(**hit['_source']) for hit in hits]
-        return GenreList(genres=genres_list)
+        genres_list = await self._redis_repo.get(redis_key, GenreList)
+        if not genres_list:
+            self.logger.info("Could not find cached genres by '%s'", redis_key)
+            search_params = self._create_elastic_search_params()
+            genres_list = await self._elastic_repo.list(search_params, GenreList)
+            if not genres_list.items:
+                self.logger.info("Could not find genres by params '%s'", redis_key)
+                return genres_list
 
-    async def _genres_from_cache(self) -> GenreList|None:
-        # Пытаемся получить данные о фильме из кеша, используя команду get
-        # https://redis.io/commands/get/
-        data: list[Genre] = await self.redis.get("genres")
-        if not data:
-            return None
+            await self._redis_repo.save(redis_key, genres_list)
 
-        return GenreList.model_validate_json(data)
+        return genres_list
 
-    async def _put_genres_to_cache(self, genres: GenreList):
-        # Сохраняем данные о жанрах, используя команду set
-        # Выставляем время жизни кеша — 5 минут
-        # https://redis.io/commands/set/
-        # pydantic позволяет сериализовать модель в json
-        # genre_list = GenreList(genres=genres)
-        await self.redis.set(
-            "genres", genres.model_dump_json(), CACHE_EXPIRE_IN_SECONDS
+    def _create_elastic_search_params(
+        self
+    ) -> GenresElasticParams:
+        search_params = GenresElasticParams(
+            musts=[], from_=0, size=50
         )
+        return search_params
 
-# для эндпоинта /genres/{uuid}
-    async def get_by_id(self, uuid: str) -> Genre|None:
-        genre = await self._genre_from_cache(uuid)
+# для эндпоинта /genres/{genre_id}
+    async def get_genre_by_id(
+        self,
+        genre_id: UUID4
+    ) -> Genre|None:
+        redis_key = self._create_redis_key(self._elastic_repo.index, [genre_id])
+        genre = await self._redis_repo.get(redis_key, Genre)
         if not genre:
-            genre = await self._get_genre_from_elastic(uuid)
+            self.logger.info("Could not find cached genre by '%s'", redis_key)
+            genre = await self._elastic_repo.get(genre_id, Genre)
             if not genre:
-                logger.error('Elasticsearch. Not found')
+                self.logger.info("Could not find genre '%s'", genre_id)
                 return None
-            await self._put_genre_to_cache(genre)
+            await self._redis_repo.save(redis_key, genre)
 
         return genre
-
-    async def _get_genre_from_elastic(self, uuid: str) -> Genre|None:
-        try:
-            doc = await self.elastic.get(index='genres', id=uuid)
-        except NotFoundError:
-            return None
-        return Genre(**doc['_source'])
-
-    async def _genre_from_cache(self, uuid: str) -> Genre|None:
-        # Пытаемся получить данные о фильме из кеша, используя команду get
-        # https://redis.io/commands/get/
-        data = await self.redis.get(f"genres:{uuid}")
-        if not data:
-            return None
-
-        return Genre.model_validate_json(data)
-
-    async def _put_genre_to_cache(self, genre: Genre):
-        # Сохраняем данные о фильме, используя команду set
-        # Выставляем время жизни кеша — 5 минут
-        # https://redis.io/commands/set/
-        # pydantic позволяет сериализовать модель в json
-        cache_id = f"genres:{genre.uuid}"
-        await self.redis.set(
-            cache_id, genre.model_dump_json(), CACHE_EXPIRE_IN_SECONDS
-        )
-
-
-@lru_cache()
-def get_genre_service(
-        redis: Redis = Depends(get_redis),
-        elastic: AsyncElasticsearch = Depends(get_elastic),
-) -> GenreService:
-    return GenreService(redis, elastic)

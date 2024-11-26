@@ -137,4 +137,5 @@ dmypy.json
 #vscode
 .vscode
 
+*.bak
 test.es
