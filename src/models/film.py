@@ -19,7 +19,7 @@ class FilmDetail(Item):
     uuid: UUID4 = Field(validation_alias=AliasChoices('id', 'uuid'))
     title: str
     imdb_rating: float|None = None
-    description: str|None = None
+    # description: str|None = None
     genre: list[Genre] = Field(validation_alias=AliasChoices('genres', 'genre'))
     actors: list[PersonShort]
     writers: list[PersonShort]

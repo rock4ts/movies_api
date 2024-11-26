@@ -3,16 +3,29 @@ volumes:
 
 services:
   elastic-db:
-    build: elastic
+    image: "elasticsearch:8.6.2"
     volumes:
       - esdata:/usr/share/elasticsearch/data
       - ./elastic/es_dump:/usr/share/elasticsearch/snapshots
+    environment:
+      ES_JAVA_OPTS: "-Xms1024m -Xmx1024m"
+      discovery.type: "single-node"
+      path.repo: "/usr/share/elasticsearch/snapshots"
+      xpack.security.enabled: "false"
+      cluster.routing.allocation.disk.watermark.low: "90%"
     healthcheck:
       test: curl -s http://elastic-db:9200  >/dev/null || exit 1
       interval: 20s
       timeout: 20s
       retries: 5
     restart: unless-stopped 
+
+  load-elastic-index:
+    image: "elasticsearch:8.6.2"
+    restart: "no"
+    volumes:
+      - ./post-process:/scripts
+    command: ["/scripts/wait-for-it.sh", "elastic-db:9200", "-s", "-t", "60", "--", "/scripts/load_elastic_index.sh"]
 
   redis:
     image: redis:alpine
@@ -31,7 +44,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-    restart: unless-stopped 
+    restart: unless-stopped
+    command: ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "main:app", "--bind", "0.0.0.0:8000"]
 
   nginx:
     image: nginx:latest
