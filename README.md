@@ -9,8 +9,7 @@ https://github.com/mletunenko/Async_API_sprint_1_team
 
 ## Docker-compose
 
-1. Создать .env по образцу
-2. Выполнить команды:
+1. Выполнить команды:
 ```bash
 make build && make up
 ```
@@ -19,11 +18,13 @@ make build && make up
 
 1. Активировать venv и создать .env по образцу
 2. Установить зависимости
+
 ```bash
 pip install --upgrade pip && pip install -r requirements.txt
 ```
 3. Используйте docker-compose.yml 
 Так же поднятие контейнеров с сервисами для локальной работы доступны через 
+
 ```bash
 make dev-build && make dev-up
 ```
@@ -34,6 +35,30 @@ make dev-build && make dev-up
 ```bash
 cd src && fastapi dev main.py
 ```
+
+# Tests
+
+## Локальный запуск
+
+1. Выполнить команды:
+
+```bash
+cd tests/functional && make dev-build && make dev-up
+```
+2. Запустить командой:
+
+```bash
+pytest src
+```
+
+## Запуск в docker-compose
+
+1. Выполнить команды:
+
+```bash
+cd tests/functional && make build && make up
+```
+
 
 # Docs
 

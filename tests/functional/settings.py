@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from tests.functional.elastic.schema_mapping import SHEMA_MAPPING
 
 
 class TestSettings(BaseSettings):
@@ -9,6 +10,7 @@ class TestSettings(BaseSettings):
     elastic_port: int = 9200
     redis_host: str = '127.0.0.1'
     redis_port: int = 6379
+    es_index_mapping: dict = SHEMA_MAPPING
 
     @property
     def service_url(self):
