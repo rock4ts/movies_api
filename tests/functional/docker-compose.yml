@@ -24,13 +24,11 @@ services:
       - "6379:6379"
 
   fastapi:
-    build: ../../.
-    image: fastapi-image
+    extends:
+      file: ../../docker-compose.yml
+      service: fastapi
     ports:
       - "8000:8000"
-    environment:
-      - ELASTIC_HOST=elastic-db
-      - REDIS_HOST=redis
     depends_on:
       elastic-db:
         condition: service_healthy
@@ -40,19 +38,12 @@ services:
     command: ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "main:app", "--bind", "0.0.0.0:8000"]
 
   tests:
-    image: fastapi-image
-    environment:
-      - ELASTIC_HOST=elastic-db
-      - REDIS_HOST=redis
-      - SERVICE_HOST=fastapi
-      - JSON_SCHEMA_PATH=/app/tests/functional/elastic/schema
-    volumes:
-      - ./elastic/schema:/app/tests/functional/elastic/schema  
+    build: .
     depends_on:
       elastic-db:
         condition: service_healthy
       redis:
         condition: service_started
-    restart: no
-    command: ["pytest", "/app/tests/functional/src"]
 
+    restart: "no"
+    command: ["pytest", "src"]

@@ -43,7 +43,7 @@ cd src && fastapi dev main.py
 1. Выполнить команды:
 
 ```bash
-cd tests/functional && make dev-build && make dev-up
+cd tests/functional && make up-dev
 ```
 2. Запустить командой:
 
@@ -56,7 +56,7 @@ pytest src
 1. Выполнить команды:
 
 ```bash
-cd tests/functional && make build && make up
+cd tests/functional && make up
 ```
 
 

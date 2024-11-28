@@ -38,7 +38,9 @@ services:
       - .env
     environment:
       - ELASTIC_HOST=elastic-db
+      - ELASTIC_PORT=9200
       - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
       elastic-db:
         condition: service_healthy
