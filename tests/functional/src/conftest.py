@@ -42,11 +42,17 @@ async def es_create_indexes(es_client: AsyncElasticsearch):
 def es_mock_data(es_client: AsyncElasticsearch):
 
     @asynccontextmanager
-    async def inner(actions: list[dict]):
+    async def inner(index: str, es_data: list[dict]):
+        bulk_query = []
         try:
+            for row in es_data:
+                data = {'_index': index, '_id': row['id']}
+                data.update({'_source': row})
+                bulk_query.append(data)
+
             updated, errors = await async_bulk(
                 client=es_client,
-                actions=actions,
+                actions=bulk_query,
                 refresh=True
                 )
             if errors:
@@ -55,31 +61,38 @@ def es_mock_data(es_client: AsyncElasticsearch):
             yield
 
         finally:
-            data_to_delete = [
-                {"delete": {"_index": item['_index'], "_id": item["_id"]}}
-                for item in actions
-                ]
+            bulk_query = []
+            for row in es_data:
+                bulk_query.append(
+                    {'_op_type': 'delete', "_index": index, "_id": row["id"]}
+                    )
+
             deleted, errors = await async_bulk(
                 client=es_client,
-                actions=data_to_delete,
+                actions=bulk_query,
                 refresh=True
                 )
             if errors:
-                raise Exception('Ошибка удаленя данных в Elasticsearch')
+                raise Exception('Ошибка удаления данных в Elasticsearch')
 
     return inner
 
 
+@pytest_asyncio.fixture(name='http_client', loop_scope='session')
+async def http_client():
+    session = aiohttp.ClientSession()
+    yield session
+    await session.close()
+
+
 @pytest_asyncio.fixture(name='make_get_request')
-def make_get_request():
+def make_get_request(http_client: aiohttp.ClientSession):
 
     async def inner(endpoint: str, query_data: dict | None = None):
-        session = aiohttp.ClientSession()
         url = webapp_test_settings.service_url + endpoint
-        async with session.get(url, params=query_data) as response:
-            body = await response.json()
-            status = response.status
-        await session.close()
+        response = await http_client.get(url, params=query_data)
+        body = await response.json()
+        status = response.status
         return body, status
 
     return inner
