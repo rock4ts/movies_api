@@ -4,10 +4,11 @@ from elasticsearch import NotFoundError
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import UUID4
 
+from api.v1.dependencies import get_person_service
 from api.v1.schemas import PersonSearchParams
 from models.film import Film
 from models.person import Person
-from services.person import PersonService, get_person_service
+from services.person import PersonService
 
 router = APIRouter()
 

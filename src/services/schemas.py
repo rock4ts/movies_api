@@ -13,7 +13,7 @@ class ElasticSearchParams(BaseModel):
     size: int|None = 50
 
 
-class PersonElasticParams(BaseModel):
+class PersonElasticParams(ElasticSearchParams):
     musts: list[dict[str, Any]]
     from_: int = 0
     size: int = 50

@@ -42,7 +42,11 @@ class PersonListParams(BaseModel):
 
 
 class PersonSearchParams(PersonListParams):
-    query: str|None = None
+    query: str|None = Field(
+        None,
+        examples=['Leonard'],
+        description="Поле для полнотекстового поиска по имени персоны."
+    )
 
 
 class GenresListParams(BaseModel):
