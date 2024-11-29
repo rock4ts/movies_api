@@ -73,14 +73,14 @@ def es_mock_data(es_client: AsyncElasticsearch):
     return inner
 
 
-@pytest_asyncio.fixture(name='http_client', loop_scope='session')
+@pytest_asyncio.fixture(scope='session', loop_scope='session')
 async def http_client():
     session = aiohttp.ClientSession()
     yield session
     await session.close()
 
 
-@pytest_asyncio.fixture(name='make_get_request')
+@pytest_asyncio.fixture
 def make_get_request(http_client: aiohttp.ClientSession):
 
     async def inner(endpoint: str, query_data: dict | None = None):
