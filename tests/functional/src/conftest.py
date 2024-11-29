@@ -1,15 +1,15 @@
 from contextlib import asynccontextmanager
+
 import aiohttp
 import pytest_asyncio
+
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.helpers import async_bulk
 
 from src.settings import es_test_settings, webapp_test_settings
 
 
-@pytest_asyncio.fixture(
-        name='es_client', scope='session', loop_scope='session'
-        )
+@pytest_asyncio.fixture(scope='session', loop_scope='session')
 async def es_client():
     es_client = AsyncElasticsearch(
         hosts=es_test_settings.elastic_url, verify_certs=False
@@ -18,13 +18,8 @@ async def es_client():
     await es_client.close()
 
 
-@pytest_asyncio.fixture(
-        name='es_create_indexes',
-        scope='session',
-        loop_scope='session',
-        autouse=True
-        )
-async def es_create_indexes(es_client: AsyncElasticsearch):
+@pytest_asyncio.fixture(scope='session', loop_scope='session', autouse=True)
+async def es_indexes(es_client: AsyncElasticsearch):
     indexes_and_mappings = [
         (es_test_settings.genres_index, es_test_settings.genres_mapping),
         (es_test_settings.movies_index, es_test_settings.movies_mapping),
@@ -38,7 +33,7 @@ async def es_create_indexes(es_client: AsyncElasticsearch):
         await es_client.indices.create(index=index, body=mapping)
 
 
-@pytest_asyncio.fixture(name='es_mock_data')
+@pytest_asyncio.fixture
 def es_mock_data(es_client: AsyncElasticsearch):
 
     @asynccontextmanager
