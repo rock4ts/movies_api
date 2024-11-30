@@ -33,44 +33,75 @@ async def es_indexes(es_client: AsyncElasticsearch):
         await es_client.indices.create(index=index, body=mapping)
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(scope='session', loop_scope='session')
 def es_mock_data(es_client: AsyncElasticsearch):
 
-    @asynccontextmanager
-    async def inner(index: str, es_data: list[dict]):
-        bulk_query = []
-        try:
+    async def inner(index: str, es_data: dict | list[dict]):
+
+        index_ops = []
+        if isinstance(es_data, list):
             for row in es_data:
-                data = {'_index': index, '_id': row['id']}
-                data.update({'_source': row})
-                bulk_query.append(data)
+                data = {'_index': index, '_id': row['id'], '_source': row}
+                index_ops.append(data)
+        else:
+            data = {'_index': index, '_id': es_data['id'], '_source': es_data}
+            index_ops.append(data)
+        indexed, errors = await async_bulk(
+            client=es_client,
+            actions=index_ops,
+            refresh=True
+            )
 
-            updated, errors = await async_bulk(
-                client=es_client,
-                actions=bulk_query,
-                refresh=True
-                )
-            if errors:
-                raise Exception('Ошибка записи данных в Elasticsearch')
-
-            yield
-
-        finally:
-            bulk_query = []
-            for row in es_data:
-                bulk_query.append(
-                    {'_op_type': 'delete', "_index": index, "_id": row["id"]}
-                    )
-
-            deleted, errors = await async_bulk(
-                client=es_client,
-                actions=bulk_query,
-                refresh=True
-                )
-            if errors:
-                raise Exception('Ошибка удаления данных в Elasticsearch')
+        if errors:
+            raise Exception('Ошибка записи данных в Elasticsearch')
 
     return inner
+
+
+@pytest_asyncio.fixture(scope='session', loop_scope='session')
+def es_destroy_mock_data(es_client: AsyncElasticsearch):
+
+    async def inner(index: str):
+
+        response = await es_client.delete_by_query(
+                index=index,
+                body={"query": {"match_all": {}}},
+                conflicts="proceed"
+            )
+        if response.get("failures"):
+            raise Exception(
+                f'Ошибка удаления данных в индексе {index}: ',
+                f'{response["failures"]}'
+            )
+
+    return inner
+
+
+@pytest_asyncio.fixture(scope='session', loop_scope='session')
+async def clear_index(request, es_client: AsyncElasticsearch):
+    '''
+    Для использования фикстуры нужно задекорировать тест по примеру:
+    @pytest.mark.clear_index(index_name=es_test_settings.<NAME>_index)
+    '''
+    marker = request.node.get_closest_marker("clear_index")
+
+    if not marker:
+        return
+
+    index_name = marker.kwargs.get("index_name")
+    if not index_name:
+        return
+    
+    response = await es_client.delete_by_query(
+        index=index_name,
+        body={"query": {"match_all": {}}},
+        conflicts="proceed"
+    )
+    if response.get("failures"):
+        raise Exception(
+            f'Ошибка удаления данных в индексе {index_name}: ',
+            f'{response["failures"]}'
+        )
 
 
 @pytest_asyncio.fixture(scope='session', loop_scope='session')
