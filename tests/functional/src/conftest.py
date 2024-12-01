@@ -76,7 +76,7 @@ def es_destroy_mock_data(es_client: AsyncElasticsearch):
     return inner
 
 
-@pytest_asyncio.fixture(scope='session', loop_scope='session')
+@pytest_asyncio.fixture(loop_scope='session', autouse=True)
 async def clear_index(request, es_client: AsyncElasticsearch):
     '''
     Для использования фикстуры нужно задекорировать тест по примеру:
