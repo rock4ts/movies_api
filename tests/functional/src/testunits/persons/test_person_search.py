@@ -2,9 +2,9 @@ import pytest
 import pytest_asyncio
 
 from src.testunits.persons.conftest import (ALL_LOADED_PERSONS_COUNT,
-                                            DUMMY_PERSONS_NUMBER,
-                                            DUMMY_PERSON_NUMBER_FACTOR,
                                             DUMMY_PERSON_NAME,
+                                            DUMMY_PERSON_NUMBER_FACTOR,
+                                            DUMMY_PERSONS_NUMBER,
                                             TARGET_PERSON_NAME)
 
 
@@ -76,7 +76,7 @@ async def test_search_result_can_be_paginated(make_get_request):
         all_dummies_from_pages.extend(dummies)
 
     assert len(all_dummies) == len(all_dummies_from_pages)
-    
+
     all_ids = [dummy['uuid'] for dummy in all_dummies]
     all_ids_from_pages = [dummy['uuid'] for dummy in all_dummies_from_pages]
 

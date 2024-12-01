@@ -1,8 +1,8 @@
 import uuid
+
 import pytest
 
 from src.settings import es_test_settings
-
 
 FILM_COLLECTION: dict = {
     "7f5c7fa0-87b8-43d8-89f4-b3d617f86c46": "The Star wars 2022",

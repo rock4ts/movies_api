@@ -1,10 +1,11 @@
 import aiohttp
 import pytest_asyncio
-from redis.asyncio import Redis
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.helpers import async_bulk
+from redis.asyncio import Redis
 
-from src.settings import es_test_settings, redis_test_settings, webapp_test_settings
+from src.settings import (es_test_settings, redis_test_settings,
+                          webapp_test_settings)
 
 
 @pytest_asyncio.fixture(scope='session', loop_scope='session')

@@ -3,9 +3,9 @@ import pytest_asyncio
 
 from src.settings import es_test_settings
 from src.testunits.persons.conftest import (ALL_LOADED_PERSONS_COUNT,
-                                            DUMMY_PERSONS_NUMBER,
-                                            DUMMY_PERSON_NUMBER_FACTOR,
                                             DUMMY_PERSON_NAME,
+                                            DUMMY_PERSON_NUMBER_FACTOR,
+                                            DUMMY_PERSONS_NUMBER,
                                             TARGET_PERSON_FILMS_NUMBER,
                                             TARGET_PERSON_NAME)
 

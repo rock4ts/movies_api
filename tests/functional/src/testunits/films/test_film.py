@@ -2,7 +2,6 @@ import pytest
 
 from src.settings import es_test_settings
 
-
 FILM_IDS: tuple = (
     'bb248af1-8e37-4c59-866d-40ac6e10b36f',
     '4856a731-a980-4f74-9b63-87271f54c4a5',
