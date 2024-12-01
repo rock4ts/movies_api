@@ -89,16 +89,20 @@ ES_BIG_DATA = [
         ({'genre': 'not uuid string'}, {'status': 422, 'length': 1})
     ]
 )
+@pytest.mark.clear_index(index_name=es_test_settings.movies_index)
 @pytest.mark.asyncio(loop_scope='session')
 async def test_search(
     es_mock_data, make_get_request, query_data, expected_answer
 ):
 
-    async with es_mock_data(es_test_settings.movies_index, ES_DATA):
-        body, status = await make_get_request(
-            '/api/v1/films/search',
-            query_data
-        )
+    await es_mock_data(es_test_settings.movies_index, ES_DATA)
+
+    body, status = await make_get_request(
+        '/api/v1/films/search',
+        query_data
+    )
+
+
     assert status == expected_answer['status']
     assert len(body) == expected_answer['length']
 
@@ -116,36 +120,56 @@ async def test_search_pages(
     es_mock_data, make_get_request, query_data, expected_answer
 ):
 
-    async with es_mock_data(es_test_settings.movies_index, ES_BIG_DATA):
-        body, status = await make_get_request(
-            '/api/v1/films/search',
-            query_data
-        )
-    print(body)
-    assert status == expected_answer['status']
-    assert len(body) == expected_answer['length']
-
-
-# =========== Cashe tests ===========
-@pytest.mark.clear_index(index_name=es_test_settings.movies_index)
-@pytest.mark.parametrize(
-    'query_data, expected_answer',
-    [
-        ({'query': 'Star'}, {'status': 200, 'length': 1}),
-        ({'query': 'Space'}, {'status': 200, 'length': 2}),
-        ({'genre': "ef86b8ff-3c82-4d31-ad8e-72c59f4e3f95"},
-         {'status': 200, 'length': 5}
-         ),
-        ({'sort': '-imdb_rating'}, {'status': 200, 'length': 5}),
-        ({'query': 'Mashed potato'}, {'status': 200, 'length': 0})
-    ]
-)
-@pytest.mark.asyncio(loop_scope='session')
-async def test_search_cached(make_get_request, query_data, expected_answer):
+    await es_mock_data(es_test_settings.movies_index, ES_BIG_DATA)
 
     body, status = await make_get_request(
         '/api/v1/films/search',
         query_data
     )
+
     assert status == expected_answer['status']
     assert len(body) == expected_answer['length']
+
+
+# =========== Cashe tests ===========
+@pytest.mark.asyncio(loop_scope='session')
+@pytest.mark.clear_index(index_name=es_test_settings.movies_index)
+async def test_search_cached(
+    es_mock_data,
+    es_destroy_mock_data,
+    clear_cache_by_prefix,
+    make_get_request
+    ):
+
+    query_data = {'query': 'Star'}
+
+    await es_mock_data(es_test_settings.movies_index, ES_DATA)
+
+    es_body, status = await make_get_request(
+        '/api/v1/films/search',
+        query_data
+    )
+
+    await es_destroy_mock_data(es_test_settings.movies_index)
+
+    assert status == 200
+    assert len(es_body) == 1
+
+
+    cached_body, status = await make_get_request(
+        '/api/v1/films/search',
+        query_data
+    )
+
+    assert status == 200
+    assert len(cached_body) == 1
+
+    await clear_cache_by_prefix(es_test_settings.movies_index)
+
+    empty_body, status = await make_get_request(
+        '/api/v1/films/search',
+        query_data
+    )
+
+    assert status == 200
+    assert len(empty_body) == 0

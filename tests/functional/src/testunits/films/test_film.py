@@ -52,8 +52,9 @@ ES_DATA: list[dict] = [
 @pytest.mark.asyncio(loop_scope='session')
 async def test_get_films_all(es_mock_data, make_get_request):
 
-    async with es_mock_data(es_test_settings.movies_index, ES_DATA):
-        body, status = await make_get_request('/api/v1/films')
+    await es_mock_data(es_test_settings.movies_index, ES_DATA)
+    
+    body, status = await make_get_request('/api/v1/films')
 
     assert status == 200
     assert len(body) == 5
@@ -113,21 +114,33 @@ async def test_get_films_all_cached(make_get_request):
     assert len(body) == 5
 
 
-@pytest.mark.clear_index(index_name=es_test_settings.movies_index)
-@pytest.mark.parametrize(
-    'film_ids, expected_answer',
-    [
-        ({'film_id': id_}, {'status': 200})
-        for id_ in FILM_IDS]
-)
 @pytest.mark.asyncio(loop_scope='session')
 async def test_get_films_by_id_cached(
-    make_get_request, film_ids, expected_answer
-):
+    es_mock_data,
+    es_destroy_mock_data,
+    clear_cache_by_prefix,
+    make_get_request,
+    ):
 
-    url = f'/api/v1/films/{film_ids['film_id']}'
+    await es_mock_data(es_test_settings.movies_index, ES_DATA)
 
-    body, status = await make_get_request(url)
+    for id_ in FILM_IDS:
 
-    assert status == expected_answer['status']
-    assert body['uuid'] == film_ids['film_id']
+        es_body, status = await make_get_request(f'/api/v1/films/{id_}')
+
+        assert status == 200
+        assert es_body['uuid'] == id_
+
+    await es_destroy_mock_data(es_test_settings.movies_index)
+
+    for id_ in FILM_IDS:
+        cached_body, status = await make_get_request(f'/api/v1/films/{id_}')
+
+        assert status == 200
+        assert cached_body['uuid'] == id_
+
+    await clear_cache_by_prefix(es_test_settings.movies_index)
+
+    for id_ in FILM_IDS:
+        empty_body, status = await make_get_request(f'/api/v1/films/{id_}')
+        assert status == 404
