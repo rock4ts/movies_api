@@ -6,7 +6,9 @@ class PaginationParams(BaseModel):
     page_size: int|None = Field(
         50, description="Количество объектов на странице.", ge=1, le=100
         )
-    page_number: int|None = Field(1, description="Номер страницы.", ge=1)
+    page_number: int|None = Field(
+        1, description="Номер страницы.", ge=1, le=100
+        )
 
 
 class FilmListParams(BaseModel):
@@ -39,6 +41,12 @@ class FilmSearchParams(FilmListParams):
 
 class PersonListParams(BaseModel):
     pagination_params: PaginationParams = Depends()
+
+    @model_serializer(mode='wrap')
+    def serialize(self, handler) -> dict:
+        data = handler(self)
+        pagination_data = data.pop("pagination_params", {})
+        return {**data, **pagination_data}
 
 
 class PersonSearchParams(PersonListParams):

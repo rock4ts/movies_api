@@ -57,7 +57,6 @@ class FilmService(BaseService):
 
         return film
 
-    # TODO потенциально и это можно вынести в BaseService
     def _create_elastic_search_params(
         self,
         query_params: Union[FilmListParams | FilmSearchParams]
