@@ -2,7 +2,7 @@ import json
 import os
 
 from dotenv import load_dotenv
-from pydantic import HttpUrl
+from pydantic import Field, HttpUrl
 from pydantic_settings import BaseSettings
 
 
@@ -55,7 +55,7 @@ class RedisTestSettings(BaseTestSettings):
 
 
 class WebAppTestSettings(BaseTestSettings):
-    service_host: str = '127.0.0.1'
+    service_host: str = Field('127.0.0.1', validation_alias='FASTAPI_HOST')
     service_port: int = 8000
 
     @property

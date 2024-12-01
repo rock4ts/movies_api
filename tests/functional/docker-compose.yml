@@ -45,6 +45,7 @@ services:
     environment:
       - ELASTIC_HOST=elastic-db
       - REDIS_HOST=redis
+      - FASTAPI_HOST=fastapi
     depends_on:
       elastic-db:
         condition: service_healthy
@@ -53,3 +54,4 @@ services:
 
     restart: "no"
     command: ["pytest", "src"]
+  
