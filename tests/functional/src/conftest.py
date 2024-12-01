@@ -1,12 +1,10 @@
-from contextlib import asynccontextmanager
-
 import aiohttp
 import pytest_asyncio
-
+from redis.asyncio import Redis
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.helpers import async_bulk
 
-from src.settings import es_test_settings, webapp_test_settings
+from src.settings import es_test_settings, redis_test_settings, webapp_test_settings
 
 
 @pytest_asyncio.fixture(scope='session', loop_scope='session')
@@ -66,7 +64,8 @@ def es_destroy_mock_data(es_client: AsyncElasticsearch):
         response = await es_client.delete_by_query(
                 index=index,
                 body={"query": {"match_all": {}}},
-                conflicts="proceed"
+                conflicts="proceed",
+                refresh=True
             )
         if response.get("failures"):
             raise Exception(
@@ -111,7 +110,7 @@ async def http_client():
     await session.close()
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(scope='session', loop_scope='session')
 def make_get_request(http_client: aiohttp.ClientSession):
 
     async def inner(endpoint: str, query_data: dict | None = None):
@@ -120,5 +119,30 @@ def make_get_request(http_client: aiohttp.ClientSession):
         body = await response.json()
         status = response.status
         return body, status
+
+    return inner
+
+
+@pytest_asyncio.fixture(scope='session', loop_scope='session')
+async def redis_client():
+    r = Redis(host=redis_test_settings.redis_host,
+              port=redis_test_settings.redis_port)
+    yield r
+    await r.aclose()
+
+
+@pytest_asyncio.fixture(scope='function', loop_scope='session', autouse=True)
+async def clear_cache(redis_client: Redis):
+    yield
+    await redis_client.flushdb()
+
+
+@pytest_asyncio.fixture(scope='session', loop_scope='session')
+def clear_cache_by_prefix(redis_client: Redis):
+
+    async def inner(prefix):
+        pattern = f"{prefix}:*"
+        async for key in redis_client.scan_iter(pattern):
+            await redis_client.delete(key)
 
     return inner

@@ -29,10 +29,7 @@ async def persons_films(uuid: UUID4,
     """
     Все фильмы по персоне
     """
-    try:
-        films = await person_service.get_films_by_person(uuid)
-    except NotFoundError:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='person not found')
+    films = await person_service.get_films_by_person(uuid)
     return films.items
 
 

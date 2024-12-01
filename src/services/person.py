@@ -1,7 +1,5 @@
 from typing import Union
 
-from elasticsearch import NotFoundError
-
 from api.v1.schemas import PersonListParams, PersonSearchParams
 from db.repository import AsyncElasticRepository, AsyncRedisRepository
 from models.film import FilmList
@@ -13,6 +11,7 @@ PERSON_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 
 
 class PersonService(BaseService):
+
     def __init__(self,
                  _redis_repo: AsyncRedisRepository,
                  _elastic_repo: AsyncElasticRepository):
@@ -55,12 +54,13 @@ class PersonService(BaseService):
     async def _get_person_from_elastic(
         self, person_uuid: str
     ) -> Person|None:
-        try:
-            person = await self._elastic_repo.get(person_uuid, Person)
-            films = await self._get_film_roles_by_person(person_uuid)
-            person.films = films
-        except NotFoundError:
+
+        person: Person = await self._elastic_repo.get(person_uuid, Person)
+        if not person:
             return None
+
+        films = await self._get_film_roles_by_person(person_uuid)
+        person.films = films
         return person
 
     async def _get_persons_from_elastic(
@@ -82,6 +82,7 @@ class PersonService(BaseService):
 
     async def _search_films_by_person(self, person_uuid: str) -> list:
         films_query = {
+            "size": 1000,
             "query": {
                 "bool": {
                     "should": [
