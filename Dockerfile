@@ -14,3 +14,4 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 # Скопируем код приложения в рабочую директорию
 COPY . /app
+COPY /post-process/wait-for-it.sh /scripts/
