@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 import pytest
 
 from src.settings import es_test_settings
@@ -29,7 +31,7 @@ async def test_genre_get_by_id_cache(
     empty_body, status = await make_get_request(
         '/api/v1/genres')
 
-    assert status == 200
+    assert status == HTTPStatus.OK
     assert len(empty_body) == 0
 
 

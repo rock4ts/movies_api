@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 import pytest
 
 from src.settings import es_test_settings
@@ -16,5 +18,5 @@ async def test_genres_get_by_id(es_mock_data, make_get_request):
     body, genre_not_found_status = await make_get_request(
         f'/api/v1/genres/{NON_EXISTENT_ID}'
         )
-    assert genre_found_status == 200
-    assert genre_not_found_status == 404
+    assert genre_found_status == HTTPStatus.OK
+    assert genre_not_found_status == HTTPStatus.NOT_FOUND

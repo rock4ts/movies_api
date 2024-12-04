@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 import pytest
 import pytest_asyncio
 
@@ -34,7 +36,7 @@ async def test_persons_search(make_get_request, query_data):
 
     persons, status = await make_get_request('/api/v1/persons/search', query_data)
 
-    assert status == 200
+    assert status == HTTPStatus.OK
     assert len(persons) >= 1
 
     for person in persons:

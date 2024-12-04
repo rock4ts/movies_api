@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 import pytest
 import pytest_asyncio
 
@@ -98,4 +100,4 @@ async def test_person_details(
         f"/api/v1/persons/{target_person_data['id']}"
         )
 
-    assert status_not_found == 404
+    assert status_not_found == HTTPStatus.NOT_FOUND

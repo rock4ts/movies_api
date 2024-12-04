@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 import pytest
 import pytest_asyncio
 
@@ -17,8 +19,8 @@ async def test_persons_can_be_found_by_id(
     body, person_not_found_status = await make_get_request(
         f'/api/v1/persons/{non_existent_person_data["id"]}'
         )
-    assert person_found_status == 200
-    assert person_not_found_status == 404
+    assert person_found_status == HTTPStatus.OK
+    assert person_not_found_status == HTTPStatus.NOT_FOUND
 
 
 @pytest.mark.asyncio(loop_scope='session')
@@ -30,7 +32,7 @@ async def test_person_details_returns_expected_data(
         )
     all_films, _ = await make_get_request('/api/v1/films')
 
-    assert status == 200
+    assert status == HTTPStatus.OK
     assert person["uuid"] == target_person_data['id']
     assert person["full_name"] == target_person_data['full_name']
     assert len(person['films']) == len(target_person_films_data)

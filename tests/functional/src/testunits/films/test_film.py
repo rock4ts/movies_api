@@ -1,5 +1,6 @@
-import pytest
+from http import HTTPStatus
 
+import pytest
 from src.settings import es_test_settings
 
 FILM_IDS: tuple = (
@@ -55,7 +56,7 @@ async def test_get_films_all(es_mock_data, make_get_request):
     
     body, status = await make_get_request('/api/v1/films')
 
-    assert status == 200
+    assert status == HTTPStatus.OK
     assert len(body) == 5
 
 
@@ -64,7 +65,7 @@ async def test_get_films_all(es_mock_data, make_get_request):
     'film_ids, expected_answer',
     [
         (
-            {'film_id': id_}, {'status': 200}
+            {'film_id': id_}, {'status': HTTPStatus.OK}
         ) for id_ in FILM_IDS
     ]
 )
@@ -86,7 +87,7 @@ async def test_get_films_by_id(
     'film_ids, expected_answer',
     [
         (
-            {'film_id': id_}, {'status': 422}
+            {'film_id': id_}, {'status': HTTPStatus.UNPROCESSABLE_ENTITY}
         ) for id_ in FILM_INVALID_IDS
     ]
 )
@@ -109,7 +110,7 @@ async def test_get_films_all_cached(make_get_request):
 
     body, status = await make_get_request('/api/v1/films')
 
-    assert status == 200
+    assert status == HTTPStatus.OK
     assert len(body) == 5
 
 
@@ -127,7 +128,7 @@ async def test_get_films_by_id_cached(
 
         es_body, status = await make_get_request(f'/api/v1/films/{id_}')
 
-        assert status == 200
+        assert status == HTTPStatus.OK
         assert es_body['uuid'] == id_
 
     await es_destroy_mock_data(es_test_settings.movies_index)
@@ -135,11 +136,11 @@ async def test_get_films_by_id_cached(
     for id_ in FILM_IDS:
         cached_body, status = await make_get_request(f'/api/v1/films/{id_}')
 
-        assert status == 200
+        assert status == HTTPStatus.OK
         assert cached_body['uuid'] == id_
 
     await clear_cache_by_prefix(es_test_settings.movies_index)
 
     for id_ in FILM_IDS:
         empty_body, status = await make_get_request(f'/api/v1/films/{id_}')
-        assert status == 404
+        assert status == HTTPStatus.NOT_FOUND
