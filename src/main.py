@@ -29,14 +29,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.project_name,
-    docs_url='/api/openapi',
-    openapi_url='/api/openapi.json',
+    root_path='/api',
     default_response_class=ORJSONResponse,
     description="API for cinema",
     lifespan=lifespan
 )
 
 
-app.include_router(films.router, prefix='/api/v1/films', tags=['films'])
-app.include_router(genres.router, prefix='/api/v1/genres', tags=['genres'])
-app.include_router(persons.router, prefix='/api/v1/persons', tags=['persons'])
+app.include_router(films.router, prefix='/v1/films', tags=['films'])
+app.include_router(genres.router, prefix='/v1/genres', tags=['genres'])
+app.include_router(persons.router, prefix='/v1/persons', tags=['persons'])
