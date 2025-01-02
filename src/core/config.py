@@ -18,7 +18,6 @@ class Settings(BaseSettings):
     debug: bool = False
 
     authjwt_secret_key: str
-    authjwt_algorithm: str = "RS256"
 
     @property
     def elastic_url(self) -> str:

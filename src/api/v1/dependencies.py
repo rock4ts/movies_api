@@ -58,11 +58,8 @@ def decode_token(token: str) -> dict | None:
     было выброшено исключение.
     """
     try:
-        return jwt.decode(
-            token,
-            settings.authjwt_secret_key,
-            algorithms=[settings.authjwt_algorithm],
-        )
+        algorithms = [jwt.get_unverified_header(token)["alg"],]
+        return jwt.decode(token, settings.authjwt_secret_key, algorithms=algorithms)
     except Exception:
         return None
 
