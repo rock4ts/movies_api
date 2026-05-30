@@ -89,6 +89,49 @@ The API is exposed through nginx at `/api`:
 API: http://127.0.0.1/api/v1/films/  
 OpenAPI docs: http://127.0.0.1/api/docs
 
+## Running tests
+
+Functional tests exercise the live API against Elasticsearch and Redis. Default connection settings in `tests/functional/settings.py` match the ports published by `docker-compose.tests.yml`:
+
+| Service | Host | Port |
+|---------|------|------|
+| API | `127.0.0.1` | `8001` |
+| Elasticsearch | `127.0.0.1` | `9201` |
+| Redis | `127.0.0.1` | `6378` |
+
+### Test stack (Docker)
+
+1. Create `.env` for the API container (Docker network hostnames):
+   ```bash
+   cp .env.example .env
+   ```
+   Set `ELASTIC_HOST=elastic-db` — the Elasticsearch service name in `docker-compose.tests.yml`.
+
+2. Start Redis, Elasticsearch, and the API:
+   ```bash
+   docker compose -f docker-compose.tests.yml up --build -d
+   ```
+
+3. Run the full suite from the repo root:
+   ```bash
+   uv run pytest tests/functional -c tests/functional/pytest.ini
+   ```
+
+4. Stop the stack when finished:
+   ```bash
+   docker compose -f docker-compose.tests.yml down
+   ```
+
+### Run a subset
+
+```bash
+uv run pytest tests/functional/testunits/films -c tests/functional/pytest.ini
+uv run pytest tests/functional/testunits/genres -c tests/functional/pytest.ini
+uv run pytest tests/functional/testunits/persons -c tests/functional/pytest.ini
+```
+
+Override host or port via environment variables accepted by `tests/functional/settings.py` (for example, `ELASTIC_PORT`, `REDIS_PORT`, `SERVICE_PORT`).
+
 ## Updating dependencies
 
 `pyproject.toml` is the source of truth for local development. After changing dependencies, export them for Docker builds:
