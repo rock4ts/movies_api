@@ -10,7 +10,7 @@ dnspython==2.7.0
 elastic-transport==8.15.1
 elasticsearch==8.13.2
 email_validator==2.2.0
-fastapi==0.111.0
+fastapi==0.115.0
 fastapi-cli==0.0.5
 frozenlist==1.5.0
 gunicorn==23.0.0

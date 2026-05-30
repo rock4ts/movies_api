@@ -1,0 +1,45 @@
+services:
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6378:6379"
+    networks:
+      - movies-api-tests
+
+  elastic-db:
+    image: "elasticsearch:8.6.2"
+    ports:
+      - "9201:9200"
+    environment:
+      ES_JAVA_OPTS: "-Xms1024m -Xmx1024m"
+      discovery.type: "single-node"
+      xpack.security.enabled: "false"
+      cluster.routing.allocation.disk.watermark.low: "90%"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health?wait_for_status=yellow || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - movies-api-tests
+
+  movies-api:
+    build: .
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env
+    depends_on:
+      elastic-db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - movies-api-tests
+
+networks:
+  movies-api-tests:
+    name: movies-api-tests

@@ -1,0 +1,54 @@
+import logging
+from http import HTTPStatus
+from typing import Annotated, Any
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import UUID4
+
+from app.services.film import FilmService
+
+from .dependencies import get_film_service
+from .request_models import FilmListParamsModel, FilmSearchParamsModel
+from .response_models import FilmShort, FilmDetail
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+
+@router.get("/", response_model=list[FilmShort], summary="Получить список популярных фильмов")
+async def films(
+    request_params: Annotated[FilmListParamsModel, Query()],
+    film_service: Annotated[FilmService, Depends(get_film_service)],
+) -> list[dict[str, str]]:
+    """
+    Эндпоинт для получения списка фильмов
+    с возможностью фильтрации по жанру и сортировке по рейтингу.
+    """
+    return await film_service.list_films(request_params)
+
+
+@router.get(
+    "/search",
+    response_model=list[FilmShort],
+    summary="Найти фильмы по имени",
+    tags=["Полнотекстовый поиск"],
+)
+async def films_search(
+    request_params: Annotated[FilmSearchParamsModel, Query()],
+    film_service: Annotated[FilmService, Depends(get_film_service)],
+) -> list[dict[str, str]]:
+    return await film_service.search_films(request_params)
+
+
+@router.get(
+    "/{film_id}", response_model=FilmDetail, summary="Получить детальное описание фильма по id"
+)
+async def film_details(
+    film_id: UUID4,
+    film_service: Annotated[FilmService, Depends(get_film_service)],
+) -> dict[str, Any]:
+    film = await film_service.get_film_by_id(film_id)
+    if not film:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="film not found")
+    return film

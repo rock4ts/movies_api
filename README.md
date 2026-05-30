@@ -1,67 +1,98 @@
-# Async_API_sprint_1_team
+# Movies API — Online Movie Theater
 
-Проектная работа четвёртого спринта
+FastAPI service for an online movie theater platform. It serves film, genre, and person data from Elasticsearch with Redis caching for client applications.
 
-https://github.com/mletunenko/Async_API_sprint_1_team
+Part of the [Yandex Practicum](https://practicum.yandex.ru/) diploma project (sprint 2).
 
+## What it does
 
-# Запуск приложения
+The service is the **read-optimized API layer** for the catalog: it queries Elasticsearch indexes populated by the ETL pipeline from the admin panel database and caches responses in Redis.
 
-## Docker-compose
+**REST API** (`/v1/`) returns catalog data as JSON:
 
-1. Выполнить команды:
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/v1/films/` | Paginated list with optional genre filter and rating sort |
+| `GET` | `/v1/films/search` | Full-text search by film title |
+| `GET` | `/v1/films/<uuid>` | Single film with genres and cast/crew |
+| `GET` | `/v1/genres/` | List of all genres |
+| `GET` | `/v1/genres/<uuid>` | Single genre by ID |
+| `GET` | `/v1/persons/search` | Full-text search by person name |
+| `GET` | `/v1/persons/<uuid>` | Single person by ID |
+| `GET` | `/v1/persons/<uuid>/film` | Films linked to a person |
+
+List and search endpoints accept pagination query parameters: `page_size` (default 50, max 100) and `page_number` (default 1). Film list also supports `sort` (`imdb_rating`, `-imdb_rating`) and `genre` (genre UUID).
+
+## Data sources
+
+Catalog data lives in three Elasticsearch indexes (see `elasticsearch/indexes/`):
+
+- **movies** — films and TV shows with rating, genres, and people
+- **genres** — genre name and description
+- **persons** — actors, directors, and writers
+
+Indexes are created by `elastic-init` and filled by the `movies-etl` service from the admin panel PostgreSQL database.
+
+## Tech stack
+
+- Python 3.12, FastAPI
+- Elasticsearch 8.x
+- Redis
+- Gunicorn + Uvicorn workers (production)
+- [uv](https://docs.astral.sh/uv/) for local dependency management
+
+Optional integration with an external auth service via JWT (`AUTHJWT_SECRET_KEY`).
+
+## Local development
+
+1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/).
+2. Configure `.env.local` for local Redis and Elasticsearch (for example, `REDIS_HOST=127.0.0.1`, `ELASTIC_HOST=127.0.0.1`, `DEBUG=True`).
+3. Start Redis and Elasticsearch locally (or run the dev stack from repo root).
+4. Ensure indexes exist and catalog data is loaded (`just elastic-init`, then `just etl-local` or the ETL container).
+5. Sync dependencies and start the dev server:
+   ```bash
+   uv sync
+   set -a && source .env.local && set +a; uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+   ```
+
+From repo root, you can also start the full development stack:
+
 ```bash
-make build && make up
+just dev
 ```
 
-## Локальный запуск
+API: http://127.0.0.1:8000/v1/films/  
+OpenAPI docs: http://127.0.0.1:8000/docs
 
-1. Активировать venv и создать .env по образцу
-2. Установить зависимости
+## Containerized run
 
-```bash
-pip install --upgrade pip && pip install -r requirements.txt
-```
-3. Используйте docker-compose.yml 
-Так же поднятие контейнеров с сервисами для локальной работы доступны через 
+Containerized runs are orchestrated from repo root:
 
-```bash
-make dev-build && make dev-up
-```
-4. Переменные окружения в конфиге по умолчанию для локального запуска.
+- Development stack: `docker-compose.dev.yml`
 
-5. Запуск приложения
+The `movies-api` service runs in the development stack with Redis, Elasticsearch, nginx, and `movies-etl`. Ensure env files for dependent services are in place as well (`admin_panel/.env`, `movies_etl/.env`, and repo-root `.env` for PostgreSQL).
+
+Copy `.env.example` to `.env` and use Docker network hostnames (`REDIS_HOST=redis`, `ELASTIC_HOST=elastic-db`):
 
 ```bash
-cd src && fastapi dev main.py
+cp movies_api/.env.example movies_api/.env
 ```
 
-# Tests
-
-## Локальный запуск
-
-1. Выполнить команды:
+Run development stack:
 
 ```bash
-cd tests/functional && make up-dev
+docker compose -f docker-compose.dev.yml up --build -d
 ```
-2. Запустить командой:
+
+The API is exposed through nginx at `/api`:
+
+API: http://127.0.0.1/api/v1/films/  
+OpenAPI docs: http://127.0.0.1/api/docs
+
+## Updating dependencies
+
+`pyproject.toml` is the source of truth for local development. After changing dependencies, export them for Docker builds:
 
 ```bash
-pytest src
+uv export --format requirements-txt --no-hashes > requirements.txt
 ```
-
-## Запуск в docker-compose
-
-1. Выполнить команды:
-
-```bash
-cd tests/functional && make up
-```
-
-
-# Docs
-
-Наш сервис поддерживает документацию OpenAPI Swagger по адресу:
-
-http://127.0.0.1/api/docs
