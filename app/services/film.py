@@ -4,9 +4,8 @@ from typing import Any
 from elasticsearch import NotFoundError
 from pydantic import UUID4
 
-from app.api.v1.request_models import FilmListParamsModel, FilmSearchParamsModel
-
 from .base import BaseService
+from .schemas import FilmListParamsDTO, FilmSearchParamsDTO
 
 
 class FilmService(BaseService):
@@ -20,22 +19,22 @@ class FilmService(BaseService):
             body["from"] = (page_number - 1) * page_size
             body["size"] = page_size
 
-    def _get_film_list_cache_key(self, request_params: FilmListParamsModel) -> str:
+    def _get_film_list_cache_key(self, film_list_params: FilmListParamsDTO) -> str:
         return (
-            f"{self._index}:{request_params.sort}:{request_params.genre_id}:"
-            f"{request_params.page_number}:{request_params.page_size}"
+            f"{self._index}:{film_list_params.sort}:{film_list_params.genre_id}:"
+            f"{film_list_params.page_number}:{film_list_params.page_size}"
         )
 
     def _get_film_detail_cache_key(self, film_id: UUID4) -> str:
         return f"{self._index}:{film_id}"
 
-    def _get_film_search_cache_key(self, request_params: FilmSearchParamsModel) -> str:
+    def _get_film_search_cache_key(self, film_search_params: FilmSearchParamsDTO) -> str:
         return (
-            f"{self._index}:{request_params.query}:"
-            f"{request_params.page_number}:{request_params.page_size}"
+            f"{self._index}:{film_search_params.query}:"
+            f"{film_search_params.page_number}:{film_search_params.page_size}"
         )
 
-    def _prepare_film_list_es_body(self, request_params: FilmListParamsModel) -> dict[str, Any]:
+    def _prepare_film_list_es_body(self, film_list_params: FilmListParamsDTO) -> dict[str, Any]:
         body: dict[str, Any] = {
             "query": {
                 "bool": {
@@ -44,27 +43,29 @@ class FilmService(BaseService):
                 }
             },
         }
-        if request_params.genre_id:
+        if film_list_params.genre_id:
             body["query"]["bool"]["filter"].append(
                 {
                     "nested": {
                         "path": "genres",
                         "query": {
                             "bool": {
-                                "must": [{"term": {"genres.id": str(request_params.genre_id)}}]
+                                "must": [{"term": {"genres.id": str(film_list_params.genre_id)}}]
                             }
                         },
                     }
                 }
             )
-        self._apply_pagination(body, request_params.page_number, request_params.page_size)
-        if request_params.sort:
+        self._apply_pagination(body, film_list_params.page_number, film_list_params.page_size)
+        if film_list_params.sort:
             body["sort"] = [
-                {"imdb_rating": {"order": "desc" if request_params.sort.startswith("-") else "asc"}}
+                {"imdb_rating": {"order": "desc" if film_list_params.sort.startswith("-") else "asc"}}
             ]
         return body
 
-    def _prepare_film_search_es_body(self, request_params: FilmSearchParamsModel) -> dict[str, Any]:
+    def _prepare_film_search_es_body(
+        self, film_search_params: FilmSearchParamsDTO
+    ) -> dict[str, Any]:
         body: dict[str, Any] = {
             "query": {
                 "bool": {
@@ -73,9 +74,9 @@ class FilmService(BaseService):
                 }
             },
         }
-        if request_params.query:
-            body["query"]["bool"]["must"].append({"match": {"title": request_params.query}})
-        self._apply_pagination(body, request_params.page_number, request_params.page_size)
+        if film_search_params.query:
+            body["query"]["bool"]["must"].append({"match": {"title": film_search_params.query}})
+        self._apply_pagination(body, film_search_params.page_number, film_search_params.page_size)
         return body
 
     async def _get_films(
@@ -95,14 +96,14 @@ class FilmService(BaseService):
         await self._cache_set(cache_key, film_list)
         return film_list
 
-    async def list_films(self, request_params: FilmListParamsModel) -> list[dict[str, Any]]:
-        cache_key = self._get_film_list_cache_key(request_params)
-        es_request_body = self._prepare_film_list_es_body(request_params)
+    async def list_films(self, film_list_params: FilmListParamsDTO) -> list[dict[str, Any]]:
+        cache_key = self._get_film_list_cache_key(film_list_params)
+        es_request_body = self._prepare_film_list_es_body(film_list_params)
         return await self._get_films(es_request_body, cache_key)
 
-    async def search_films(self, request_params: FilmSearchParamsModel) -> list[dict[str, Any]]:
-        cache_key = self._get_film_search_cache_key(request_params)
-        es_request_body = self._prepare_film_search_es_body(request_params)
+    async def search_films(self, film_search_params: FilmSearchParamsDTO) -> list[dict[str, Any]]:
+        cache_key = self._get_film_search_cache_key(film_search_params)
+        es_request_body = self._prepare_film_search_es_body(film_search_params)
         return await self._get_films(es_request_body, cache_key)
 
     async def get_film_by_id(self, film_id: UUID4) -> dict[str, str] | None:

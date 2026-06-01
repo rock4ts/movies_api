@@ -1,18 +1,28 @@
 import http
-from typing import Any
+from typing import Annotated, Any
 from functools import lru_cache
 
 from elasticsearch import AsyncElasticsearch
 import jwt
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Query, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from redis.asyncio import Redis
 
 from app.core.config import settings
 from app.db.clients import es, redis
+from app.api.v1.request_models import (
+    FilmListParams as ApiFilmListParamsModel,
+    FilmSearchParams as ApiFilmSearchParamsModel,
+    PersonSearchParams as ApiPersonSearchParamsModel,
+)
 from app.services.film import FilmService
 from app.services.genre import GenreService
 from app.services.person import PersonService
+from app.services.schemas import (
+    FilmListParamsDTO as ServiceFilmListParamsModel,
+    FilmSearchParamsDTO as ServiceFilmSearchParamsModel,
+    PersonSearchParamsDTO as ServicePersonSearchParamsModel,
+)
 
 FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 GENRE_CACHE_EXPIRE_IN_SECONDS = 60 * 5
@@ -50,6 +60,24 @@ def get_person_service(
     elastic: AsyncElasticsearch = Depends(get_elastic),
 ) -> PersonService:
     return PersonService(redis, elastic, settings.person_index, settings.film_index)
+
+
+def get_film_list_service_params(
+    request_params: Annotated[ApiFilmListParamsModel, Query()],
+) -> ServiceFilmListParamsModel:
+    return ServiceFilmListParamsModel.model_validate(request_params.model_dump())
+
+
+def get_film_search_service_params(
+    request_params: Annotated[ApiFilmSearchParamsModel, Query()],
+) -> ServiceFilmSearchParamsModel:
+    return ServiceFilmSearchParamsModel.model_validate(request_params.model_dump())
+
+
+def get_person_search_service_params(
+    request_params: Annotated[ApiPersonSearchParamsModel, Query()],
+) -> ServicePersonSearchParamsModel:
+    return ServicePersonSearchParamsModel.model_validate(request_params.model_dump())
 
 
 def decode_token(token: str) -> dict[str, Any] | None:

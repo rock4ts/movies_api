@@ -1,12 +1,15 @@
 from http import HTTPStatus
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import UUID4
 
-from app.api.v1.dependencies import get_person_service
-from app.api.v1.request_models import PersonSearchParamsModel
+from app.api.v1.dependencies import (
+    get_person_search_service_params,
+    get_person_service,
+)
 from app.services.person import PersonService
+from app.services.schemas import PersonSearchParamsDTO as ServicePersonSearchParamsModel
 
 from .response_models import FilmShort, Person
 
@@ -15,7 +18,9 @@ router = APIRouter()
 
 @router.get("/search", response_model=list[Person], summary="Поиск по персонам")
 async def person_search(
-    request_params: Annotated[PersonSearchParamsModel, Query()],
+    request_params: Annotated[
+        ServicePersonSearchParamsModel, Depends(get_person_search_service_params)
+    ],
     person_service: Annotated[PersonService, Depends(get_person_service)],
 ) -> list[dict[str, str]]:
     """

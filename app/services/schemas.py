@@ -1,23 +1,29 @@
-from typing import Any
+from typing import Literal, Self
 
-from pydantic import BaseModel
-
-ListDictAny = list[dict[str, Any]]
+from pydantic import UUID4, BaseModel, Field, model_validator
 
 
-class ElasticSearchParams(BaseModel):
-    sorts: ListDictAny | None = []
-    filters: ListDictAny | None = []
-    musts: ListDictAny | None = []
-    from_: int | None = 0
-    size: int | None = 50
+class PaginationParamsDTO(BaseModel):
+    page_size: int | None = Field(50, ge=1, le=100)
+    page_number: int | None = Field(1, ge=1, le=100)
+
+    @model_validator(mode="after")
+    def validate_pagination_params(self) -> Self:
+        if self.page_size and not self.page_number:
+            raise ValueError("Page number is required")
+        if self.page_number and not self.page_size:
+            raise ValueError("Page size is required")
+        return self
 
 
-class PersonElasticParams(ElasticSearchParams):
-    musts: list[dict[str, Any]]
-    from_: int = 0
-    size: int = 50
+class FilmListParamsDTO(PaginationParamsDTO):
+    sort: Literal["-imdb_rating", "imdb_rating"] | None = None
+    genre_id: UUID4 | None = Field(None, alias="genre")
 
 
-class GenresElasticParams(ElasticSearchParams):
-    pass
+class FilmSearchParamsDTO(PaginationParamsDTO):
+    query: str | None = None
+
+
+class PersonSearchParamsDTO(PaginationParamsDTO):
+    query: str | None = None

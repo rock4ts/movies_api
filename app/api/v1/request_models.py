@@ -3,7 +3,7 @@ from typing import Literal, Self
 from pydantic import UUID4, BaseModel, Field, model_validator
 
 
-class PaginationParamsModel(BaseModel):
+class PaginationParams(BaseModel):
     page_size: int | None = Field(50, description="Количество объектов на странице.", ge=1, le=100)
     page_number: int | None = Field(1, description="Номер страницы.", ge=1, le=100)
 
@@ -16,7 +16,7 @@ class PaginationParamsModel(BaseModel):
         return self
 
 
-class FilmListParamsModel(PaginationParamsModel):
+class FilmListParams(PaginationParams):
     sort: Literal["-imdb_rating", "imdb_rating"] | None = Field(
         None,
         examples=["-imdb_rating", "imdb_rating"],
@@ -27,13 +27,13 @@ class FilmListParamsModel(PaginationParamsModel):
     )
 
 
-class FilmSearchParamsModel(PaginationParamsModel):
+class FilmSearchParams(PaginationParams):
     query: str | None = Field(
         None, examples=["star"], description="Поле для полнотекстового поиска по названию фильма."
     )
 
 
-class PersonSearchParamsModel(PaginationParamsModel):
+class PersonSearchParams(PaginationParams):
     query: str | None = Field(
         None, examples=["Leonard"], description="Поле для полнотекстового поиска по имени персоны."
     )

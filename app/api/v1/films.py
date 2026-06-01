@@ -2,13 +2,20 @@ import logging
 from http import HTTPStatus
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import UUID4
 
 from app.services.film import FilmService
+from app.services.schemas import (
+    FilmListParamsDTO as ServiceFilmListParamsModel,
+    FilmSearchParamsDTO as ServiceFilmSearchParamsModel,
+)
 
-from .dependencies import get_film_service
-from .request_models import FilmListParamsModel, FilmSearchParamsModel
+from .dependencies import (
+    get_film_list_service_params,
+    get_film_search_service_params,
+    get_film_service,
+)
 from .response_models import FilmShort, FilmDetail
 
 logger = logging.getLogger(__name__)
@@ -18,7 +25,7 @@ router = APIRouter()
 
 @router.get("/", response_model=list[FilmShort], summary="Получить список популярных фильмов")
 async def films(
-    request_params: Annotated[FilmListParamsModel, Query()],
+    request_params: Annotated[ServiceFilmListParamsModel, Depends(get_film_list_service_params)],
     film_service: Annotated[FilmService, Depends(get_film_service)],
 ) -> list[dict[str, str]]:
     """
@@ -35,7 +42,9 @@ async def films(
     tags=["Полнотекстовый поиск"],
 )
 async def films_search(
-    request_params: Annotated[FilmSearchParamsModel, Query()],
+    request_params: Annotated[
+        ServiceFilmSearchParamsModel, Depends(get_film_search_service_params)
+    ],
     film_service: Annotated[FilmService, Depends(get_film_service)],
 ) -> list[dict[str, str]]:
     return await film_service.search_films(request_params)

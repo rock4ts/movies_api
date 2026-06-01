@@ -5,10 +5,10 @@ from elasticsearch import AsyncElasticsearch, NotFoundError
 from pydantic import UUID4
 from redis.asyncio import Redis
 
-from app.api.v1.request_models import PersonSearchParamsModel
 from app.core.config import settings
 
 from .base import BaseService
+from .schemas import PersonSearchParamsDTO
 
 
 class PersonService(BaseService):
@@ -32,10 +32,10 @@ class PersonService(BaseService):
             body["from"] = (page_number - 1) * page_size
             body["size"] = page_size
 
-    def _get_person_search_cache_key(self, request_params: PersonSearchParamsModel) -> str:
+    def _get_person_search_cache_key(self, person_search_params: PersonSearchParamsDTO) -> str:
         return (
-            f"{self._index}:{request_params.query}:"
-            f"{request_params.page_number}:{request_params.page_size}"
+            f"{self._index}:{person_search_params.query}:"
+            f"{person_search_params.page_number}:{person_search_params.page_size}"
         )
 
     def _get_person_detail_cache_key(self, person_id: UUID4) -> str:
@@ -45,7 +45,7 @@ class PersonService(BaseService):
         return f"{self._index}:films:{person_id}"
 
     def _prepare_person_search_es_body(
-        self, request_params: PersonSearchParamsModel
+        self, person_search_params: PersonSearchParamsDTO
     ) -> dict[str, Any]:
         body: dict[str, Any] = {
             "query": {
@@ -55,9 +55,11 @@ class PersonService(BaseService):
                 }
             }
         }
-        if request_params.query:
-            body["query"]["bool"]["must"].append({"match": {"full_name": request_params.query}})
-        self._apply_pagination(body, request_params.page_number, request_params.page_size)
+        if person_search_params.query:
+            body["query"]["bool"]["must"].append({"match": {"full_name": person_search_params.query}})
+        self._apply_pagination(
+            body, person_search_params.page_number, person_search_params.page_size
+        )
         return body
 
     @staticmethod
@@ -195,14 +197,16 @@ class PersonService(BaseService):
 
         return roles_by_person
 
-    async def search_persons(self, request_params: PersonSearchParamsModel) -> list[dict[str, Any]]:
-        cache_key = self._get_person_search_cache_key(request_params)
+    async def search_persons(
+        self, person_search_params: PersonSearchParamsDTO
+    ) -> list[dict[str, Any]]:
+        cache_key = self._get_person_search_cache_key(person_search_params)
         cached_persons = await self._cache_get(cache_key)
         if cached_persons:
             return cached_persons
 
         self.logger.info(f"Could not find cached persons by {cache_key}")
-        es_request_body = self._prepare_person_search_es_body(request_params)
+        es_request_body = self._prepare_person_search_es_body(person_search_params)
         response = await self._elastic.search(index=self._index, body=es_request_body)
         persons = [person["_source"] for person in response["hits"]["hits"]]
         if not persons:
