@@ -1,6 +1,9 @@
+from datetime import datetime
 from typing import Literal, Self
 
 from pydantic import UUID4, BaseModel, Field, model_validator
+
+from app.core.enums import AccessLabel
 
 
 class PaginationParams(BaseModel):
@@ -37,3 +40,15 @@ class PersonSearchParams(PaginationParams):
     query: str | None = Field(
         None, examples=["Leonard"], description="Поле для полнотекстового поиска по имени персоны."
     )
+
+
+class AccessTokenPayload(BaseModel):
+    type: Literal["access"]
+    is_superuser: bool
+    role: str | None = None
+    access_labels: list[AccessLabel]
+    sub: UUID4
+    iat: datetime
+    exp: datetime
+    jti: UUID4
+    tv: int

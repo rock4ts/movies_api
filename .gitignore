@@ -139,3 +139,4 @@ dmypy.json
 
 *.bak
 test.es
+certs/

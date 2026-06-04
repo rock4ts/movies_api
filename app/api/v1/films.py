@@ -5,7 +5,8 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import UUID4
 
-from app.services.film import FilmService
+from app.core.enums import AccessLabel
+from app.services.film import FilmAccessError, FilmNotFoundError, FilmService
 from app.services.schemas import (
     FilmListParamsDTO as ServiceFilmListParamsModel,
     FilmSearchParamsDTO as ServiceFilmSearchParamsModel,
@@ -15,6 +16,7 @@ from .dependencies import (
     get_film_list_service_params,
     get_film_search_service_params,
     get_film_service,
+    user_access_labels,
 )
 from .response_models import FilmShort, FilmDetail
 
@@ -55,9 +57,12 @@ async def films_search(
 )
 async def film_details(
     film_id: UUID4,
+    access_labels: Annotated[list[AccessLabel], Depends(user_access_labels)],
     film_service: Annotated[FilmService, Depends(get_film_service)],
 ) -> dict[str, Any]:
-    film = await film_service.get_film_by_id(film_id)
-    if not film:
+    try:
+        return await film_service.get_film_by_id(film_id, access_labels)
+    except FilmNotFoundError:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="film not found")
-    return film
+    except FilmAccessError:
+        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="film access error")

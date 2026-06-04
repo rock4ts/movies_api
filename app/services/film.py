@@ -4,8 +4,18 @@ from typing import Any
 from elasticsearch import NotFoundError
 from pydantic import UUID4
 
+from app.core.enums import AccessLabel
+
 from .base import BaseService
 from .schemas import FilmListParamsDTO, FilmSearchParamsDTO
+
+
+class FilmAccessError(Exception):
+    pass
+
+
+class FilmNotFoundError(Exception):
+    pass
 
 
 class FilmService(BaseService):
@@ -106,19 +116,34 @@ class FilmService(BaseService):
         es_request_body = self._prepare_film_search_es_body(film_search_params)
         return await self._get_films(es_request_body, cache_key)
 
-    async def get_film_by_id(self, film_id: UUID4) -> dict[str, str] | None:
+    async def get_film_by_id(
+        self, film_id: UUID4, access_labels: list[AccessLabel]
+    ) -> dict[str, str]:
         cache_key = self._get_film_detail_cache_key(film_id)
-        cached_film = await self._cache_get(cache_key)
-        if cached_film:
-            return cached_film
+        film = await self._cache_get(cache_key)
+        if not film:
+            self.logger.info(f"Could not find cached film by {cache_key}")
+            try:
+                response = await self._elastic.get(index=self._index, id=str(film_id))
+                film = response["_source"]
+                await self._cache_set(cache_key, film)
+            except NotFoundError:
+                self.logger.info(f"Could not find film {film_id}")
 
-        self.logger.info(f"Could not find cached film by {cache_key}")
+        if not film:
+            raise FilmNotFoundError()
+
+        film_label = film.get("access_label")
+        if not film_label:
+            return film
+
         try:
-            response = await self._elastic.get(index=self._index, id=str(film_id))
-        except NotFoundError:
-            self.logger.info(f"Could not find film {film_id}")
-            return None
+            film_label = AccessLabel(film_label)
+        except ValueError:
+            self.logger.error(f"Film {film_id} has invalid access_label: {film_label}")
+            raise FilmAccessError()
 
-        film = response["_source"]
-        await self._cache_set(cache_key, film)
+        if film_label not in access_labels:
+            raise FilmAccessError()
+
         return film

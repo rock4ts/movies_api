@@ -1,16 +1,18 @@
-import http
-from typing import Annotated, Any
+from typing import Annotated
 from functools import lru_cache
 
 from elasticsearch import AsyncElasticsearch
 import jwt
-from fastapi import Depends, HTTPException, Query, Request
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import Depends, Query
+from fastapi.security import OAuth2PasswordBearer
+from pydantic import ValidationError
 from redis.asyncio import Redis
 
-from app.core.config import settings
+from app.core.config import settings, jwt_settings
+from app.core.enums import AccessLabel
 from app.db.clients import es, redis
 from app.api.v1.request_models import (
+    AccessTokenPayload,
     FilmListParams as ApiFilmListParamsModel,
     FilmSearchParams as ApiFilmSearchParamsModel,
     PersonSearchParams as ApiPersonSearchParamsModel,
@@ -23,10 +25,12 @@ from app.services.schemas import (
     FilmSearchParamsDTO as ServiceFilmSearchParamsModel,
     PersonSearchParamsDTO as ServicePersonSearchParamsModel,
 )
+from .exceptions import CredentialsHttpException
 
 FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 GENRE_CACHE_EXPIRE_IN_SECONDS = 60 * 5
-
+ALL_ACCESS_LABELS = list(AccessLabel)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token", auto_error=False)
 
 @lru_cache()
 def get_redis() -> Redis:
@@ -80,49 +84,43 @@ def get_person_search_service_params(
     return ServicePersonSearchParamsModel.model_validate(request_params.model_dump())
 
 
-def decode_token(token: str) -> dict[str, Any] | None:
-    """
-    Функция декодирует токен, используя секретный ключ, сохранённый в объекте settings в поле jwt_secret_key.
-    Возвращает содержимое токена в виде словаря или None, если токен невалиден или при декодировании
-    было выброшено исключение.
-    """
-    try:
-        algorithms = [
-            jwt.get_unverified_header(token)["alg"],
-        ]
-        return jwt.decode(token, settings.authjwt_secret_key, algorithms=algorithms)
-    except Exception:
+def get_access_token_payload(
+    token: Annotated[str | None, Depends(oauth2_scheme)],
+) -> AccessTokenPayload | None:
+    if not token:
         return None
+    try:
+        payload = jwt.decode(token, jwt_settings.public_key, algorithms=[jwt_settings.algorithm])
+    except jwt.ExpiredSignatureError:
+        raise CredentialsHttpException("Token has expired")
+    except jwt.InvalidTokenError:
+        raise CredentialsHttpException("Invalid token")
+
+    try:
+        payload = AccessTokenPayload.model_validate(payload)
+    except ValidationError:
+        raise CredentialsHttpException("Invalid token payload")
+
+    if payload.type != "access":
+        raise CredentialsHttpException("Token is not an access token")
+
+    return payload
 
 
-@lru_cache()
-def get_security_jwt() -> HTTPBearer:
-    return HTTPBearer()
+def user_access_labels(
+    token_payload: Annotated[
+        AccessTokenPayload | None,
+        Depends(get_access_token_payload),
+    ],
+) -> list[AccessLabel]:
 
+    if not token_payload:
+        return [AccessLabel.FREE]
 
-async def get_auth_credentials(
-    request: Request, bearer: HTTPBearer = Depends(get_security_jwt)
-) -> HTTPAuthorizationCredentials | None:
-    return await bearer(request)
+    if token_payload.is_superuser:
+        return ALL_ACCESS_LABELS
 
+    if token_payload.access_labels:
+        return token_payload.access_labels
 
-def get_user_data(
-    credentials: HTTPAuthorizationCredentials | None = Depends(get_auth_credentials),
-) -> dict[str, Any]:
-    if not credentials:
-        raise HTTPException(
-            status_code=http.HTTPStatus.FORBIDDEN,
-            detail="Invalid authorization code.",
-        )
-    if credentials.scheme != "Bearer":
-        raise HTTPException(
-            status_code=http.HTTPStatus.UNAUTHORIZED,
-            detail="Only Bearer token might be accepted",
-        )
-    decoded_token = decode_token(credentials.credentials)
-    if not decoded_token:
-        raise HTTPException(
-            status_code=http.HTTPStatus.FORBIDDEN,
-            detail="Invalid or expired token.",
-        )
-    return decoded_token
+    return [AccessLabel.FREE]
