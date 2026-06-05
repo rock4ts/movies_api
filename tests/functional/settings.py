@@ -50,6 +50,12 @@ class WebAppTestSettings(BaseSettings):
         return f"http://{self.service_host}:{self.service_port}"
 
 
+class JWTTestSettings(BaseSettings):
+    private_key_path: str = "certs/jwt-private.pem"
+    jwt_algorithm: str = "RS256"
+
+
 es_test_settings = ElasticTestSettings()
 redis_test_settings = RedisTestSettings()
 webapp_test_settings = WebAppTestSettings()
+jwt_test_settings = JWTTestSettings()

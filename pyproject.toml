@@ -13,6 +13,7 @@ dependencies = [
     "attrs==24.2.0",
     "certifi==2024.8.30",
     "click==8.1.7",
+    "cryptography==44.0.0",
     "dnspython==2.7.0",
     "elastic-transport==8.15.1",
     "elasticsearch==8.13.2",

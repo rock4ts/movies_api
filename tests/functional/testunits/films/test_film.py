@@ -45,6 +45,48 @@ ES_DATA: list[dict[str, Any]] = [
     for id_ in FILM_IDS
 ]
 
+ACCESS_FILM_IDS: dict[str, str] = {
+    "free": "8ef89d95-0f0c-4d35-b3f5-03f37bb0d7bd",
+    "premium": "2b5786bf-9884-4e36-8a88-fd9f15f7fe63",
+    "vip": "618cd57a-ef5f-4f8a-9145-32ca374e39a5",
+}
+
+ACCESS_LABEL_ES_DATA: list[dict[str, Any]] = [
+    {
+        "id": ACCESS_FILM_IDS["free"],
+        "imdb_rating": 7.1,
+        "access_label": "free",
+        "genres": [{"id": "ef86b8ff-3c82-4d31-ad8e-72c59f4e3f95", "name": "Action"}],
+        "title": "Free Film",
+        "description": "Accessible for everyone",
+        "directors": [{"id": "ef86b8ff-3c82-4d31-ad8e-72b69f4e3f95", "name": "Tom"}],
+        "actors": [{"id": "ef86b8ff-3c82-4d31-ad8e-72b69f4e3f95", "name": "Ann"}],
+        "writers": [{"id": "caf76c67-c0fe-477e-8766-3ab3ff2574b5", "name": "Ben"}],
+    },
+    {
+        "id": ACCESS_FILM_IDS["premium"],
+        "imdb_rating": 8.1,
+        "access_label": "premium",
+        "genres": [{"id": "ef86b8ff-3c82-4d31-ad8e-72c59f4e3f95", "name": "Action"}],
+        "title": "Premium Film",
+        "description": "Accessible for premium users",
+        "directors": [{"id": "ef86b8ff-3c82-4d31-ad8e-72b69f4e3f95", "name": "Tom"}],
+        "actors": [{"id": "ef86b8ff-3c82-4d31-ad8e-72b69f4e3f95", "name": "Ann"}],
+        "writers": [{"id": "caf76c67-c0fe-477e-8766-3ab3ff2574b5", "name": "Ben"}],
+    },
+    {
+        "id": ACCESS_FILM_IDS["vip"],
+        "imdb_rating": 9.1,
+        "access_label": "vip",
+        "genres": [{"id": "ef86b8ff-3c82-4d31-ad8e-72c59f4e3f95", "name": "Action"}],
+        "title": "Vip Film",
+        "description": "Accessible for vip users",
+        "directors": [{"id": "ef86b8ff-3c82-4d31-ad8e-72b69f4e3f95", "name": "Tom"}],
+        "actors": [{"id": "ef86b8ff-3c82-4d31-ad8e-72b69f4e3f95", "name": "Ann"}],
+        "writers": [{"id": "caf76c67-c0fe-477e-8766-3ab3ff2574b5", "name": "Ben"}],
+    },
+]
+
 
 # =========== Elastic data tests ===========
 # GET ALL FILMS
@@ -130,3 +172,111 @@ async def test_get_films_by_id_cached(
     for id_ in FILM_IDS:
         empty_body, status = await make_get_request(f"/api/v1/films/{id_}")
         assert status == HTTPStatus.NOT_FOUND
+
+
+@pytest.mark.clear_index(index_name=es_test_settings.movies_index)
+@pytest.mark.parametrize(
+    ("access_level", "expected_status"),
+    [
+        ("free", HTTPStatus.OK),
+        ("premium", HTTPStatus.FORBIDDEN),
+        ("vip", HTTPStatus.FORBIDDEN),
+    ],
+)
+@pytest.mark.asyncio(loop_scope="session")
+async def test_get_film_details_anonymous_access(
+    es_mock_data,
+    make_get_request,
+    access_level,
+    expected_status,
+):
+    await es_mock_data(es_test_settings.movies_index, ACCESS_LABEL_ES_DATA)
+
+    film_id = ACCESS_FILM_IDS[access_level]
+    body, status = await make_get_request(f"/api/v1/films/{film_id}")
+
+    assert status == expected_status
+    if expected_status == HTTPStatus.OK:
+        assert body["uuid"] == film_id
+    else:
+        assert body["detail"] == "film access error"
+
+
+@pytest.mark.clear_index(index_name=es_test_settings.movies_index)
+@pytest.mark.parametrize(
+    ("token_labels", "expected_statuses"),
+    [
+        (
+            ["free"],
+            {
+                "free": HTTPStatus.OK,
+                "premium": HTTPStatus.FORBIDDEN,
+                "vip": HTTPStatus.FORBIDDEN,
+            },
+        ),
+        (
+            ["premium"],
+            {
+                "free": HTTPStatus.FORBIDDEN,
+                "premium": HTTPStatus.OK,
+                "vip": HTTPStatus.FORBIDDEN,
+            },
+        ),
+        (
+            ["vip"],
+            {
+                "free": HTTPStatus.FORBIDDEN,
+                "premium": HTTPStatus.FORBIDDEN,
+                "vip": HTTPStatus.OK,
+            },
+        ),
+        (
+            ["free", "premium", "vip"],
+            {
+                "free": HTTPStatus.OK,
+                "premium": HTTPStatus.OK,
+                "vip": HTTPStatus.OK,
+            },
+        ),
+    ],
+)
+@pytest.mark.asyncio(loop_scope="session")
+async def test_get_film_details_jwt_access_labels(
+    es_mock_data,
+    make_get_request,
+    make_access_token,
+    token_labels,
+    expected_statuses,
+):
+    await es_mock_data(es_test_settings.movies_index, ACCESS_LABEL_ES_DATA)
+
+    token = make_access_token(access_labels=token_labels)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    for label, expected_status in expected_statuses.items():
+        film_id = ACCESS_FILM_IDS[label]
+        body, status = await make_get_request(f"/api/v1/films/{film_id}", headers=headers)
+
+        assert status == expected_status
+        if expected_status == HTTPStatus.OK:
+            assert body["uuid"] == film_id
+        else:
+            assert body["detail"] == "film access error"
+
+
+@pytest.mark.clear_index(index_name=es_test_settings.movies_index)
+@pytest.mark.asyncio(loop_scope="session")
+async def test_get_film_details_jwt_superuser_access(
+    es_mock_data,
+    make_get_request,
+    make_access_token,
+):
+    await es_mock_data(es_test_settings.movies_index, ACCESS_LABEL_ES_DATA)
+
+    token = make_access_token(access_labels=[], is_superuser=True)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    for film_id in ACCESS_FILM_IDS.values():
+        body, status = await make_get_request(f"/api/v1/films/{film_id}", headers=headers)
+        assert status == HTTPStatus.OK
+        assert body["uuid"] == film_id

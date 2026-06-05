@@ -39,6 +39,8 @@ services:
     restart: unless-stopped
     networks:
       - movies-api-tests
+    volumes:
+      - ./certs/jwt-public.pem:/run/secrets/jwt/jwt-public.pem:ro
 
 networks:
   movies-api-tests:

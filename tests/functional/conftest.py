@@ -1,11 +1,17 @@
-import aiohttp
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
+from uuid import uuid4
+
+import aiohttp
+import jwt
+import pytest
 import pytest_asyncio
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.helpers import async_bulk
 from redis.asyncio import Redis
 
-from .settings import es_test_settings, redis_test_settings, webapp_test_settings
+from .settings import es_test_settings, jwt_test_settings, redis_test_settings, webapp_test_settings
 
 
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
@@ -101,12 +107,51 @@ async def http_client():
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
 def make_get_request(http_client: aiohttp.ClientSession):
 
-    async def inner(endpoint: str, query_data: dict | None = None):
+    async def inner(
+        endpoint: str,
+        query_data: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+    ):
         url = webapp_test_settings.service_url + endpoint
-        response = await http_client.get(url, params=query_data)
+        response = await http_client.get(url, params=query_data, headers=headers)
         body = await response.json()
         status = response.status
         return body, status
+
+    return inner
+
+
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
+def make_access_token():
+    private_key_path = Path(jwt_test_settings.private_key_path)
+    jwt_algorithm = jwt_test_settings.jwt_algorithm
+
+    if not private_key_path.exists():
+        pytest.exit(f"JWT private key not found: {private_key_path}", returncode=1)
+
+    private_key = private_key_path.read_text()
+
+    def inner(
+        access_labels: list[str] | None = None,
+        is_superuser: bool = False,
+        expires_in_minutes: int = 30,
+    ) -> str:
+        now = datetime.now(UTC)
+        payload = {
+            "type": "access",
+            "is_superuser": is_superuser,
+            "role": None,
+            "access_labels": access_labels or [],
+            "sub": str(uuid4()),
+            "iat": int(now.timestamp()),
+            "exp": int((now + timedelta(minutes=expires_in_minutes)).timestamp()),
+            "jti": str(uuid4()),
+            "tv": 1,
+        }
+        try:
+            return jwt.encode(payload, private_key, algorithm=jwt_algorithm)
+        except NotImplementedError as err:
+            pytest.skip(str(err))
 
     return inner
 
