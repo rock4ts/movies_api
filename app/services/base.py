@@ -9,10 +9,13 @@ from elasticsearch import AsyncElasticsearch
 class BaseService:
     logger: logging.Logger = logging.getLogger(__name__)
 
-    def __init__(self, redis: Redis, elastic: AsyncElasticsearch, index: str):
+    def __init__(
+        self, redis: Redis, elastic: AsyncElasticsearch, index: str, cache_ttl: int = 300
+    ):
         self._index = index
         self._redis = redis
         self._elastic = elastic
+        self._cache_ttl = cache_ttl
 
     async def _cache_get(self, key: str) -> Any | None:
         cached_value = await self._redis.get(key)
@@ -29,4 +32,4 @@ class BaseService:
             return None
 
     async def _cache_set(self, key: str, value: Any) -> None:
-        await self._redis.set(key, json.dumps(value))
+        await self._redis.set(key, json.dumps(value), ex=self._cache_ttl)

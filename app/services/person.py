@@ -20,8 +20,9 @@ class PersonService(BaseService):
         elastic: AsyncElasticsearch,
         index: str,
         film_index: str = settings.film_index,
+        cache_ttl: int = settings.cache_ttl,
     ):
-        super().__init__(redis, elastic, index)
+        super().__init__(redis, elastic, index, cache_ttl)
         self._film_index: str = film_index
 
     @staticmethod

@@ -46,7 +46,7 @@ Optional integration with an external auth service via JWT (`AUTHJWT_SECRET_KEY`
 ## Local development
 
 1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/).
-2. Configure `.env.local` for local Redis and Elasticsearch (for example, `REDIS_HOST=127.0.0.1`, `ELASTIC_HOST=127.0.0.1`, `DEBUG=True`).
+2. Configure `.env.local` for local Redis and Elasticsearch (for example, `REDIS_HOST=127.0.0.1`, `ELASTIC_HOST=127.0.0.1`, `DEBUG=True`, `CACHE_TTL=300`).
 3. Start Redis and Elasticsearch locally (or run the dev stack from repo root).
 4. Ensure indexes exist and catalog data is loaded (`just elastic-init`, then `just etl-local` or the ETL container).
 5. Sync dependencies and start the dev server:
@@ -72,7 +72,7 @@ Containerized runs are orchestrated from repo root:
 
 The `movies-api` service runs in the development stack with Redis, Elasticsearch, nginx, and `movies-etl`. Ensure env files for dependent services are in place as well (`admin_panel/.env`, `movies_etl/.env`, and repo-root `.env` for PostgreSQL).
 
-Copy `.env.example` to `.env` and use Docker network hostnames (`REDIS_HOST=redis`, `ELASTIC_HOST=elastic-db`):
+Copy `.env.example` to `.env` and use Docker network hostnames (`REDIS_HOST=redis`, `ELASTIC_HOST=elastic-db`). You can tune cache expiration with `CACHE_TTL` (seconds):
 
 ```bash
 cp movies_api/.env.example movies_api/.env

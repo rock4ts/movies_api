@@ -27,8 +27,6 @@ from app.services.schemas import (
 )
 from .exceptions import CredentialsHttpException
 
-FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5
-GENRE_CACHE_EXPIRE_IN_SECONDS = 60 * 5
 ALL_ACCESS_LABELS = list(AccessLabel)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token", auto_error=False)
 
@@ -47,7 +45,7 @@ def get_film_service(
     redis: Redis = Depends(get_redis),
     elastic: AsyncElasticsearch = Depends(get_elastic),
 ) -> FilmService:
-    return FilmService(redis, elastic, settings.film_index)
+    return FilmService(redis, elastic, settings.film_index, cache_ttl=settings.cache_ttl)
 
 
 @lru_cache()
@@ -55,7 +53,7 @@ def get_genre_service(
     redis: Redis = Depends(get_redis),
     elastic: AsyncElasticsearch = Depends(get_elastic),
 ) -> GenreService:
-    return GenreService(redis, elastic, settings.genre_index)
+    return GenreService(redis, elastic, settings.genre_index, settings.cache_ttl)
 
 
 @lru_cache()
@@ -63,7 +61,13 @@ def get_person_service(
     redis: Redis = Depends(get_redis),
     elastic: AsyncElasticsearch = Depends(get_elastic),
 ) -> PersonService:
-    return PersonService(redis, elastic, settings.person_index, settings.film_index)
+    return PersonService(
+        redis,
+        elastic,
+        settings.person_index,
+        settings.film_index,
+        settings.cache_ttl,
+    )
 
 
 def get_film_list_service_params(

@@ -33,6 +33,7 @@ class Settings(BaseSettings):
 
     debug: bool = False
     project_name: str = "Some project name"
+    cache_ttl: int = Field(default=300, validation_alias="CACHE_TTL", ge=1)
 
     film_index: str = "movies"
     genre_index: str = "genres"
