@@ -41,12 +41,12 @@ Indexes are created by `elastic-init` and filled by the `movies-etl` service fro
 - Gunicorn + Uvicorn workers (production)
 - [uv](https://docs.astral.sh/uv/) for local dependency management
 
-Optional integration with an external auth service via JWT (`AUTHJWT_SECRET_KEY`).
+Optional integration with an external auth service via RS256 JWT. Access tokens are verified with the public key from `PUBLIC_KEY_PATH`.
 
 ## Local development
 
 1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/).
-2. Configure `.env.local` for local Redis and Elasticsearch (for example, `REDIS_HOST=127.0.0.1`, `ELASTIC_HOST=127.0.0.1`, `DEBUG=True`, `CACHE_TTL=300`).
+2. Configure `.env.local` for local Redis and Elasticsearch (for example, `REDIS_HOST=127.0.0.1`, `ELASTIC_HOST=127.0.0.1`, `DEBUG=True`, `CACHE_TTL=300`). Place the auth service public key at `certs/jwt-public.pem` and set `PUBLIC_KEY_PATH=certs/jwt-public.pem` (this is the default when the variable is omitted).
 3. Start Redis and Elasticsearch locally (or run the dev stack from repo root).
 4. Ensure indexes exist and catalog data is loaded (`just elastic-init`, then `just etl-local` or the ETL container).
 5. Sync dependencies and start the dev server:
@@ -72,7 +72,7 @@ Containerized runs are orchestrated from repo root:
 
 The `movies-api` service runs in the development stack with Redis, Elasticsearch, nginx, and `movies-etl`. Ensure env files for dependent services are in place as well (`admin_panel/.env`, `movies_etl/.env`, and repo-root `.env` for PostgreSQL).
 
-Copy `.env.example` to `.env` and use Docker network hostnames (`REDIS_HOST=redis`, `ELASTIC_HOST=elastic-db`). You can tune cache expiration with `CACHE_TTL` (seconds):
+Copy `.env.example` to `.env` and use Docker network hostnames (`REDIS_HOST=redis`, `ELASTIC_HOST=elastic-db`). Mount the JWT public key into the container and point `PUBLIC_KEY_PATH` at it (for example, `/run/secrets/jwt/jwt-public.pem` as in `.env.example`). You can tune cache expiration with `CACHE_TTL` (seconds):
 
 ```bash
 cp movies_api/.env.example movies_api/.env
@@ -105,7 +105,9 @@ Functional tests exercise the live API against Elasticsearch and Redis. Default 
    ```bash
    cp .env.example .env
    ```
-   Set `ELASTIC_HOST=elastic-db` — the Elasticsearch service name in `docker-compose.tests.yml`.
+   Set `ELASTIC_HOST=elastic-db` — the Elasticsearch service name in `docker-compose.tests.yml`. Ensure `PUBLIC_KEY_PATH=/run/secrets/jwt/jwt-public.pem` (the default from `.env.example`); `docker-compose.tests.yml` mounts `./certs/jwt-public.pem` to that path.
+
+   For JWT-related functional tests, also place the matching private key at `certs/jwt-private.pem` (used by the test suite to sign tokens).
 
 2. Start Redis, Elasticsearch, and the API:
    ```bash
