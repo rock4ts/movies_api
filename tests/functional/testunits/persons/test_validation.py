@@ -18,7 +18,7 @@ async def test_person_details_validates_path_uuid(make_get_request):
 @pytest.mark.asyncio(loop_scope='session')
 async def test_person_films_validates_path_uuid(make_get_request):
     bad_id = 'bad_id'
-    body, status = await make_get_request(f'/api/v1/persons/{bad_id}/film')
+    body, status = await make_get_request(f'/api/v1/persons/{bad_id}/films')
 
     assert status == 422
 

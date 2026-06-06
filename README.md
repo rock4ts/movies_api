@@ -19,7 +19,7 @@ The service is the **read-optimized API layer** for the catalog: it queries Elas
 | `GET` | `/v1/genres/<uuid>` | Single genre by ID |
 | `GET` | `/v1/persons/search` | Full-text search by person name |
 | `GET` | `/v1/persons/<uuid>` | Single person by ID |
-| `GET` | `/v1/persons/<uuid>/film` | Films linked to a person |
+| `GET` | `/v1/persons/<uuid>/films` | Films linked to a person |
 
 List and search endpoints accept pagination query parameters: `page_size` (default 50, max 100) and `page_number` (default 1). Film list also supports `sort` (`imdb_rating`, `-imdb_rating`) and `genre` (genre UUID).
 

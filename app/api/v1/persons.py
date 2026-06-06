@@ -29,7 +29,7 @@ async def person_search(
     return await person_service.search_persons(request_params)
 
 
-@router.get("/{person_id}/film", response_model=list[FilmShort], summary="Фильмы по персоне")
+@router.get("/{person_id}/films", response_model=list[FilmShort], summary="Фильмы по персоне")
 async def persons_films(
     person_id: UUID4,
     person_service: Annotated[PersonService, Depends(get_person_service)],

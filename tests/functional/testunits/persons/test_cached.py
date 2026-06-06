@@ -50,14 +50,14 @@ async def test_persons_films_uses_cache(
     ):
 
     films_from_es, _ = await make_get_request(
-        f"/api/v1/persons/{target_person_data['id']}/film"
+        f"/api/v1/persons/{target_person_data['id']}/films"
         )
 
     assert len(films_from_es) == TARGET_PERSON_FILMS_NUMBER
 
     await es_destroy_mock_data(es_test_settings.movies_index)
     films_from_cache, _ = await make_get_request(
-        f"/api/v1/persons/{target_person_data['id']}/film"
+        f"/api/v1/persons/{target_person_data['id']}/films"
     )
 
     assert len(films_from_cache) == TARGET_PERSON_FILMS_NUMBER
@@ -65,7 +65,7 @@ async def test_persons_films_uses_cache(
 
     await clear_cache_by_prefix(es_test_settings.persons_index)
     films_deleted, _ = await make_get_request(
-        f"/api/v1/persons/{target_person_data['id']}/film"
+        f"/api/v1/persons/{target_person_data['id']}/films"
     )
 
     assert len(films_deleted) == 0
