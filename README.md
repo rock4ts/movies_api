@@ -14,7 +14,7 @@ The service is the **read-optimized API layer** for the catalog: it queries Elas
 |--------|------|-------------|
 | `GET` | `/v1/films/` | Paginated list with optional genre filter and rating sort |
 | `GET` | `/v1/films/search` | Full-text search by film title |
-| `GET` | `/v1/films/<uuid>` | Single film with genres and cast/crew |
+| `GET` | `/v1/films/<uuid>` | Single film with genres and cast/crew (access-controlled; see below) |
 | `GET` | `/v1/genres/` | List of all genres |
 | `GET` | `/v1/genres/<uuid>` | Single genre by ID |
 | `GET` | `/v1/persons/search` | Full-text search by person name |
@@ -22,6 +22,16 @@ The service is the **read-optimized API layer** for the catalog: it queries Elas
 | `GET` | `/v1/persons/<uuid>/films` | Films linked to a person |
 
 List and search endpoints accept pagination query parameters: `page_size` (default 50, max 100) and `page_number` (default 1). Film list also supports `sort` (`imdb_rating`, `-imdb_rating`) and `genre` (genre UUID).
+
+### Film detail access control
+
+`GET /v1/films/<uuid>` checks each film's `access_label` (`free`, `premium`, or `vip`) against the caller's allowed labels:
+
+- **No JWT** (or a token without `access_labels`): only films with the `free` label are returned.
+- **With JWT**: the `access_labels` claim in the access token lists which tiers the user may view. A film is returned only when its label is included in that list.
+- **Superuser**: tokens with `is_superuser=true` may access films with any label.
+
+Requests for a film the caller is not allowed to view return `403` with `film access error`. Other endpoints are not restricted by access labels.
 
 ## Data sources
 
@@ -41,7 +51,7 @@ Indexes are created by `elastic-init` and filled by the `movies-etl` service fro
 - Gunicorn + Uvicorn workers (production)
 - [uv](https://docs.astral.sh/uv/) for local dependency management
 
-Optional integration with an external auth service via RS256 JWT. Access tokens are verified with the public key from `PUBLIC_KEY_PATH`.
+Optional integration with an external auth service via RS256 JWT. Access tokens are verified with the public key from `PUBLIC_KEY_PATH`. Send the token in the `Authorization: Bearer <token>` header on film detail requests when access beyond `free` content is required.
 
 ## Local development
 
