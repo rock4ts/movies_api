@@ -2,6 +2,8 @@ from datetime import date
 
 from pydantic import UUID4, AliasChoices, Field, BaseModel
 
+from app.core.enums import AccessLabel
+
 
 from .genre import Genre
 from .person import PersonShort
@@ -12,6 +14,7 @@ class FilmShort(BaseModel):
     title: str
     imdb_rating: float | None = None
     creation_date: date | None = None
+    access_label: AccessLabel | None = None
 
 
 class FilmDetail(BaseModel):
@@ -24,3 +27,4 @@ class FilmDetail(BaseModel):
     writers: list[PersonShort]
     directors: list[PersonShort]
     creation_date: date | None = None
+    access_label: AccessLabel | None = None
