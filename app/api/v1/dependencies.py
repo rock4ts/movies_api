@@ -4,7 +4,7 @@ from functools import lru_cache
 from elasticsearch import AsyncElasticsearch
 import jwt
 from fastapi import Depends, Query
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import ValidationError
 from redis.asyncio import Redis
 
@@ -28,7 +28,7 @@ from app.services.schemas import (
 from .exceptions import CredentialsHttpException
 
 ALL_ACCESS_LABELS = list(AccessLabel)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token", auto_error=False)
+security_jwt = HTTPBearer(auto_error=False)
 
 @lru_cache()
 def get_redis() -> Redis:
@@ -89,12 +89,16 @@ def get_person_search_service_params(
 
 
 def get_access_token_payload(
-    token: Annotated[str | None, Depends(oauth2_scheme)],
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security_jwt)],
 ) -> AccessTokenPayload | None:
-    if not token:
+    if not credentials:
         return None
     try:
-        payload = jwt.decode(token, jwt_settings.public_key, algorithms=[jwt_settings.algorithm])
+        payload = jwt.decode(
+            credentials.credentials,
+            jwt_settings.public_key,
+            algorithms=[jwt_settings.algorithm],
+        )
     except jwt.ExpiredSignatureError:
         raise CredentialsHttpException("Token has expired")
     except jwt.InvalidTokenError:
