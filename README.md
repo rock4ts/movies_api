@@ -71,8 +71,10 @@ From repo root, you can also start the full development stack:
 just dev
 ```
 
-API: http://127.0.0.1:8000/v1/films/  
-OpenAPI docs: http://127.0.0.1:8000/docs
+The API is not published on port 8000 in this mode; nginx proxies it at `/api` on port 80:
+
+API: http://127.0.0.1/api/v1/films/  
+OpenAPI docs: http://127.0.0.1/api/docs
 
 ## Containerized run
 
