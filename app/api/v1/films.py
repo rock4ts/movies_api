@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/", response_model=list[FilmShort], summary="Получить список популярных фильмов")
+@router.get("", response_model=list[FilmShort], summary="Получить список популярных фильмов")
 async def films(
     request_params: Annotated[ServiceFilmListParamsModel, Depends(get_film_list_service_params)],
     film_service: Annotated[FilmService, Depends(get_film_service)],

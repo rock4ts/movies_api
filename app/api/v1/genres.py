@@ -16,7 +16,7 @@ router = APIRouter()
 
 # для эндпоинта /genres
 @router.get(
-    "/",
+    "",
     response_model=list[Genre],
     summary="Список жанров",
 )
