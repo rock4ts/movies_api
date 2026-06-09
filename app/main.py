@@ -15,7 +15,7 @@ logging.config.dictConfig(LOGGING_CONFIG)
 
 app = FastAPI(
     title=settings.project_name,
-    root_path="/api",
+    root_path="/movies/api",
     default_response_class=ORJSONResponse,
     description="API for cinema",
 )
