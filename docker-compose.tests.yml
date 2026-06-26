@@ -30,7 +30,7 @@ services:
     ports:
       - "8001:8000"
     env_file:
-      - .env
+      - .env.tests
     depends_on:
       elastic-db:
         condition: service_healthy
@@ -40,7 +40,7 @@ services:
     networks:
       - movies-api-tests
     volumes:
-      - ./certs/jwt-public.pem:/run/secrets/jwt/jwt-public.pem:ro
+      - ./tests/docker/certs/jwt-public.pem:/run/secrets/jwt/jwt-public.pem:ro
 
 networks:
   movies-api-tests:

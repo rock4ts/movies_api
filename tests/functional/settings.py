@@ -51,7 +51,7 @@ class WebAppTestSettings(BaseSettings):
 
 
 class JWTTestSettings(BaseSettings):
-    private_key_path: str = "certs/jwt-private.pem"
+    private_key_path: str = "tests/docker/certs/jwt-private.pem"
     jwt_algorithm: str = "RS256"
 
 
