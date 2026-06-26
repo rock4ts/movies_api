@@ -35,13 +35,13 @@ Requests for a film the caller is not allowed to view return `403` with `film ac
 
 ## Data sources
 
-Catalog data lives in three Elasticsearch indexes (see `elasticsearch/indexes/`):
+The service reads catalog data from three Elasticsearch indexes:
 
 - **movies** — films and TV shows with rating, genres, and people
 - **genres** — genre name and description
 - **persons** — actors, directors, and writers
 
-Indexes are created by `elastic-init` and filled by the `movies-etl` service from the admin panel PostgreSQL database.
+Indexes and documents are created and updated by the ETL service.
 
 ## Tech stack
 
@@ -53,53 +53,30 @@ Indexes are created by `elastic-init` and filled by the `movies-etl` service fro
 
 Optional integration with an external auth service via RS256 JWT. Access tokens are verified with the public key from `PUBLIC_KEY_PATH`. Send the token in the `Authorization: Bearer <token>` header on film detail requests when access beyond `free` content is required.
 
-## Local development
+## Environment variables
+
+Copy `.env.example` to `.env` and adjust values for your environment.
+
+Key settings: `REDIS_HOST`, `ELASTIC_HOST`, `PUBLIC_KEY_PATH`, `CACHE_TTL`, index names (`FILM_INDEX`, `GENRE_INDEX`, `PERSON_INDEX`).
+
+## Getting started
 
 1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/).
-2. Configure `.env.local` for local Redis and Elasticsearch (for example, `REDIS_HOST=127.0.0.1`, `ELASTIC_HOST=127.0.0.1`, `DEBUG=True`, `CACHE_TTL=300`). Place the auth service public key at `certs/jwt-public.pem` and set `PUBLIC_KEY_PATH=certs/jwt-public.pem` (this is the default when the variable is omitted).
-3. Start Redis and Elasticsearch locally (or run the dev stack from repo root).
-4. Ensure indexes exist and catalog data is loaded (`just elastic-init`, then `just etl-local` or the ETL container).
-5. Sync dependencies and start the dev server:
+2. Copy `.env.example` to `.env` and adjust Redis, Elasticsearch, and JWT public key paths.
+3. Place the auth service public key at the path configured in `PUBLIC_KEY_PATH` (default: `./certs/jwt-public.pem`).
+4. Start Redis and Elasticsearch, then ensure indexes exist and catalog data is loaded.
+5. Sync dependencies:
    ```bash
    uv sync
-   set -a && source .env.local && set +a; uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
    ```
 
-From repo root, you can also start the full development stack:
+Run the service:
 
 ```bash
-just dev
+set -a && source .env && set +a; uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-The API is not published on port 8000 in this mode; nginx proxies it at `/api` on port 80:
-
-API: http://127.0.0.1/api/v1/films/  
-OpenAPI docs: http://127.0.0.1/api/docs
-
-## Containerized run
-
-Containerized runs are orchestrated from repo root:
-
-- Development stack: `docker-compose.dev.yml`
-
-The `movies-api` service runs in the development stack with Redis, Elasticsearch, nginx, and `movies-etl`. Ensure env files for dependent services are in place as well (`admin_panel/.env`, `movies_etl/.env`, and repo-root `.env` for PostgreSQL).
-
-Copy `.env.example` to `.env` and use Docker network hostnames (`REDIS_HOST=redis`, `ELASTIC_HOST=elastic-db`). Mount the JWT public key into the container and point `PUBLIC_KEY_PATH` at it (for example, `/run/secrets/jwt/jwt-public.pem` as in `.env.example`). You can tune cache expiration with `CACHE_TTL` (seconds):
-
-```bash
-cp movies_api/.env.example movies_api/.env
-```
-
-Run development stack:
-
-```bash
-docker compose -f docker-compose.dev.yml up --build -d
-```
-
-The API is exposed through nginx at `/api`:
-
-API: http://127.0.0.1/api/v1/films/  
-OpenAPI docs: http://127.0.0.1/api/docs
+OpenAPI docs: http://127.0.0.1:8000/docs
 
 ## Running tests
 
@@ -113,20 +90,14 @@ Functional tests exercise the live API against Elasticsearch and Redis. Default 
 
 ### Test stack (Docker)
 
-1. Create `.env` for the API container (Docker network hostnames):
-   ```bash
-   cp .env.example .env
-   ```
-   Set `ELASTIC_HOST=elastic-db` — the Elasticsearch service name in `docker-compose.tests.yml`. Ensure `PUBLIC_KEY_PATH=/run/secrets/jwt/jwt-public.pem` (the default from `.env.example`); `docker-compose.tests.yml` mounts `./certs/jwt-public.pem` to that path.
-
-   For JWT-related functional tests, also place the matching private key at `certs/jwt-private.pem` (used by the test suite to sign tokens).
+1. JWT keys for the test stack live in `tests/docker/certs/` (included in the repo). Compose mounts the public key into the API container; pytest reads the private key from the same directory to sign tokens. The stack loads `.env.tests` with Docker network hostnames for Redis and Elasticsearch.
 
 2. Start Redis, Elasticsearch, and the API:
    ```bash
    docker compose -f docker-compose.tests.yml up --build -d
    ```
 
-3. Run the full suite from the repo root:
+3. Run the full suite from the `movies_api` directory:
    ```bash
    uv run pytest tests/functional -c tests/functional/pytest.ini
    ```
