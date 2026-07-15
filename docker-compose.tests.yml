@@ -1,3 +1,5 @@
+name: movies-api-test
+
 services:
 
   redis:
