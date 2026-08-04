@@ -1,4 +1,4 @@
-from .film import FilmShort, FilmDetail
+from .film import FilmDetail, FilmShort
 from .genre import Genre
 from .person import Person, PersonShort
 

@@ -1,5 +1,6 @@
 import logging
 from http import HTTPStatus
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import UUID4
@@ -20,7 +21,9 @@ router = APIRouter()
     response_model=list[Genre],
     summary="Список жанров",
 )
-async def genres(genre_service: GenreService = Depends(get_genre_service)) -> list[dict[str, str]]:
+async def genres(
+    genre_service: Annotated[GenreService, Depends(get_genre_service)],
+) -> list[dict[str, str]]:
     """
     Эндпоинт для получения списка всех жанров
     """
@@ -30,7 +33,8 @@ async def genres(genre_service: GenreService = Depends(get_genre_service)) -> li
 # для эндпоинта /genres/{uuid}
 @router.get("/{genre_id}", response_model=Genre, summary="Данные по конкретному жанру")
 async def genre_details(
-    genre_id: UUID4, genre_service: GenreService = Depends(get_genre_service)
+    genre_id: UUID4,
+    genre_service: Annotated[GenreService, Depends(get_genre_service)],
 ) -> dict[str, str]:
     """
     Детали по жанру

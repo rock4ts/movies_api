@@ -65,9 +65,9 @@ Key settings: `REDIS_HOST`, `ELASTIC_HOST`, `PUBLIC_KEY_PATH`, `CACHE_TTL`, inde
 2. Copy `.env.example` to `.env` and adjust Redis, Elasticsearch, and JWT public key paths.
 3. Place the auth service public key at the path configured in `PUBLIC_KEY_PATH` (default: `./certs/jwt-public.pem`).
 4. Start Redis and Elasticsearch, then ensure indexes exist and catalog data is loaded.
-5. Sync dependencies:
+5. Sync dependencies (including the `dev` group):
    ```bash
-   uv sync
+   uv sync --group dev
    ```
 
 Run the service:
@@ -117,10 +117,34 @@ uv run pytest tests/functional/testunits/persons -c tests/functional/pytest.ini
 
 Override host or port via environment variables accepted by `tests/functional/settings.py` (for example, `ELASTIC_PORT`, `REDIS_PORT`, `SERVICE_PORT`).
 
+## Code quality (PEP pipeline)
+
+Install development-only tooling and enable hooks from the `movies_api` directory:
+
+```bash
+uv sync --group dev
+uv run pre-commit install
+```
+
+Run checks manually:
+
+```bash
+uv run ruff format --check .
+uv run ruff check .
+```
+
+Auto-format and apply safe lint fixes:
+
+```bash
+uv run ruff check --fix .
+uv run ruff format .
+```
+
 ## Updating dependencies
 
 `pyproject.toml` is the source of truth for local development. After changing dependencies, export them for Docker builds:
 
 ```bash
-uv export --format requirements-txt --no-hashes > requirements.txt
+uv export --format requirements-txt --no-dev --no-hashes -o requirements.txt
+uv export --format requirements-txt --only-dev --no-hashes -o requirements-dev.txt
 ```

@@ -14,10 +14,10 @@ async def test_persons_can_be_found_by_id(
     make_get_request, target_person_data, non_existent_person_data
 ):
     body, person_found_status = await make_get_request(
-        f'/api/v1/persons/{target_person_data["id"]}'
+        f"/api/v1/persons/{target_person_data['id']}"
     )
     body, person_not_found_status = await make_get_request(
-        f'/api/v1/persons/{non_existent_person_data["id"]}'
+        f"/api/v1/persons/{non_existent_person_data['id']}"
     )
     assert person_found_status == HTTPStatus.OK
     assert person_not_found_status == HTTPStatus.NOT_FOUND

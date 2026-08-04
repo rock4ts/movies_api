@@ -57,7 +57,9 @@ class PersonService(BaseService):
             }
         }
         if person_search_params.query:
-            body["query"]["bool"]["must"].append({"match": {"full_name": person_search_params.query}})
+            body["query"]["bool"]["must"].append(
+                {"match": {"full_name": person_search_params.query}}
+            )
         self._apply_pagination(
             body, person_search_params.page_number, person_search_params.page_size
         )

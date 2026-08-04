@@ -9,6 +9,8 @@ from app.core.enums import AccessLabel
 from app.services.film import FilmAccessError, FilmNotFoundError, FilmService
 from app.services.schemas import (
     FilmListParamsDTO as ServiceFilmListParamsModel,
+)
+from app.services.schemas import (
     FilmSearchParamsDTO as ServiceFilmSearchParamsModel,
 )
 
@@ -18,7 +20,7 @@ from .dependencies import (
     get_film_service,
     user_access_labels,
 )
-from .response_models import FilmShort, FilmDetail
+from .response_models import FilmDetail, FilmShort
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +65,6 @@ async def film_details(
     try:
         return await film_service.get_film_by_id(film_id, access_labels)
     except FilmNotFoundError:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="film not found")
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="film not found") from None
     except FilmAccessError:
-        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="film access error")
+        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="film access error") from None

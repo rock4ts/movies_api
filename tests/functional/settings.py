@@ -22,17 +22,17 @@ class ElasticTestSettings(BaseSettings):
 
     @property
     def genres_mapping(self) -> dict[str, Any]:
-        with open(self.genres_mapping_path, "r") as f:
+        with open(self.genres_mapping_path) as f:
             return json.load(f)
 
     @property
     def movies_mapping(self) -> dict[str, Any]:
-        with open(self.movies_mapping_path, "r") as f:
+        with open(self.movies_mapping_path) as f:
             return json.load(f)
 
     @property
     def persons_mapping(self) -> dict:
-        with open(self.persons_mapping_path, "r") as f:
+        with open(self.persons_mapping_path) as f:
             return json.load(f)
 
 

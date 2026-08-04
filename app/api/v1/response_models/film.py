@@ -1,9 +1,8 @@
 from datetime import date
 
-from pydantic import UUID4, AliasChoices, Field, BaseModel
+from pydantic import UUID4, AliasChoices, BaseModel, Field
 
 from app.core.enums import AccessLabel
-
 
 from .genre import Genre
 from .person import PersonShort

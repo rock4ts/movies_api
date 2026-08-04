@@ -5,7 +5,7 @@ import pytest_asyncio
 from tests.functional.settings import es_test_settings
 
 TARGET_PERSON_NAME = "Test Testovich"
-ROLE_GROUPS = ['directors', 'actors', 'writers']
+ROLE_GROUPS = ["directors", "actors", "writers"]
 FILMS_PER_GROUP = 5
 TARGET_PERSON_FILMS_NUMBER = len(ROLE_GROUPS) * FILMS_PER_GROUP
 
@@ -16,27 +16,26 @@ DUMMY_PERSONS_NUMBER = 2 * 5
 ALL_LOADED_PERSONS_COUNT = DUMMY_PERSONS_NUMBER + 1
 
 
-
-@pytest_asyncio.fixture(scope='package')
+@pytest_asyncio.fixture(scope="package")
 def target_person_data():
-    return {'id': str(uuid.uuid4()), 'full_name': TARGET_PERSON_NAME}
+    return {"id": str(uuid.uuid4()), "full_name": TARGET_PERSON_NAME}
 
 
-@pytest_asyncio.fixture(scope='package')
+@pytest_asyncio.fixture(scope="package")
 def non_existent_person_data():
-    return {'id': str(uuid.uuid4()), 'full_name': "Yandex Practicumovich"}
+    return {"id": str(uuid.uuid4()), "full_name": "Yandex Practicumovich"}
 
 
-@pytest_asyncio.fixture(scope='package')
+@pytest_asyncio.fixture(scope="package")
 def dummy_person_factory():
 
     def inner():
-        return {'id': str(uuid.uuid4()), 'full_name': DUMMY_PERSON_NAME}
+        return {"id": str(uuid.uuid4()), "full_name": DUMMY_PERSON_NAME}
 
     return inner
 
 
-@pytest_asyncio.fixture(scope='package')
+@pytest_asyncio.fixture(scope="package")
 def dummy_persons_data(dummy_person_factory):
     data = []
     for _ in range(DUMMY_PERSONS_NUMBER):
@@ -45,35 +44,31 @@ def dummy_persons_data(dummy_person_factory):
     return data
 
 
-@pytest_asyncio.fixture(scope='package')
+@pytest_asyncio.fixture(scope="package")
 def dummy_film_factory():
 
     def inner():
         film = {
-            'id': str(uuid.uuid4()),
-            'imdb_rating': 8.5,
-            'genres': [
-                {'id': 'ef86b8ff-3c82-4d31-ad8e-72c59f4e3f95', 'name': 'Action'},
-                {'id': 'ef86b8ff-3c82-4d31-ad8e-99c59f4e3f95', 'name': 'Sci-Fi'}
+            "id": str(uuid.uuid4()),
+            "imdb_rating": 8.5,
+            "genres": [
+                {"id": "ef86b8ff-3c82-4d31-ad8e-72c59f4e3f95", "name": "Action"},
+                {"id": "ef86b8ff-3c82-4d31-ad8e-99c59f4e3f95", "name": "Sci-Fi"},
             ],
-            'title': 'The Star',
-            'description': 'New World',
-            'directors': [
-                {'id': 'caf76c67-c0fe-477e-8766-3ab3ff2574b6', 'name': 'Tom'}
+            "title": "The Star",
+            "description": "New World",
+            "directors": [{"id": "caf76c67-c0fe-477e-8766-3ab3ff2574b6", "name": "Tom"}],
+            "actors": [
+                {"id": "caf76c67-c0fe-477e-8766-3ab3ff2574b5", "name": "Ben"},
             ],
-            'actors': [
-                {'id': 'caf76c67-c0fe-477e-8766-3ab3ff2574b5', 'name': 'Ben'},
-            ],
-            'writers': [
-                {'id': 'b45bd7bc-2e16-46d5-b125-983d356768c6', 'name': 'Howard'}
-            ],
+            "writers": [{"id": "b45bd7bc-2e16-46d5-b125-983d356768c6", "name": "Howard"}],
         }
         return film
 
     return inner
 
 
-@pytest_asyncio.fixture(scope='package')
+@pytest_asyncio.fixture(scope="package")
 def person_film_factory(dummy_film_factory):
 
     def inner(role_group, target_person_data):
@@ -87,7 +82,7 @@ def person_film_factory(dummy_film_factory):
     return inner
 
 
-@pytest_asyncio.fixture(scope='package', loop_scope='session')
+@pytest_asyncio.fixture(scope="package", loop_scope="session")
 async def target_person_films_data(person_film_factory, target_person_data):
     data = []
     for group in ROLE_GROUPS:
@@ -97,7 +92,7 @@ async def target_person_films_data(person_film_factory, target_person_data):
     return data
 
 
-@pytest_asyncio.fixture(scope='package', loop_scope='session')
+@pytest_asyncio.fixture(scope="package", loop_scope="session")
 async def dummy_films_data(dummy_film_factory):
     data = []
     for _ in range(DUMMY_FILMS_NUMBER):
@@ -106,27 +101,21 @@ async def dummy_films_data(dummy_film_factory):
     return data
 
 
-
-@pytest_asyncio.fixture(scope='package')
+@pytest_asyncio.fixture(scope="package")
 def index_and_data_pairs(
-    target_person_data,
-    dummy_persons_data,
-    target_person_films_data,
-    dummy_films_data
-    ):
+    target_person_data, dummy_persons_data, target_person_films_data, dummy_films_data
+):
     pairs = [
         (es_test_settings.persons_index, target_person_data),
         (es_test_settings.persons_index, dummy_persons_data),
         (es_test_settings.movies_index, target_person_films_data),
-        (es_test_settings.movies_index, dummy_films_data)
-        ]
+        (es_test_settings.movies_index, dummy_films_data),
+    ]
     return pairs
 
 
 def _setup_es_mock_persons(
-    es_mock_data,
-    es_destroy_mock_data,
-    index_and_data_pairs: list[tuple[str, list]]
+    es_mock_data, es_destroy_mock_data, index_and_data_pairs: list[tuple[str, list]]
 ):
     async def setup():
         for index, data in index_and_data_pairs:
@@ -139,22 +128,22 @@ def _setup_es_mock_persons(
     return setup, teardown
 
 
-@pytest_asyncio.fixture(scope='module', loop_scope='session')
+@pytest_asyncio.fixture(scope="module", loop_scope="session")
 async def es_mock_persons_module(es_mock_data, es_destroy_mock_data, index_and_data_pairs):
     setup, teardown = _setup_es_mock_persons(
         es_mock_data, es_destroy_mock_data, index_and_data_pairs
-        )
+    )
 
     await setup()
     yield
     await teardown()
 
 
-@pytest_asyncio.fixture(scope='function', loop_scope='session')
+@pytest_asyncio.fixture(scope="function", loop_scope="session")
 async def es_mock_persons_function(es_mock_data, es_destroy_mock_data, index_and_data_pairs):
     setup, teardown = _setup_es_mock_persons(
         es_mock_data, es_destroy_mock_data, index_and_data_pairs
-        )
+    )
 
     await setup()
     yield

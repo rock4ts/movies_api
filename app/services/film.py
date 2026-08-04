@@ -68,9 +68,8 @@ class FilmService(BaseService):
             )
         self._apply_pagination(body, film_list_params.page_number, film_list_params.page_size)
         if film_list_params.sort:
-            body["sort"] = [
-                {"imdb_rating": {"order": "desc" if film_list_params.sort.startswith("-") else "asc"}}
-            ]
+            order = "desc" if film_list_params.sort.startswith("-") else "asc"
+            body["sort"] = [{"imdb_rating": {"order": order}}]
         return body
 
     def _prepare_film_search_es_body(
@@ -141,7 +140,7 @@ class FilmService(BaseService):
             film_label = AccessLabel(film_label)
         except ValueError:
             self.logger.error(f"Film {film_id} has invalid access_label: {film_label}")
-            raise FilmAccessError()
+            raise FilmAccessError() from None
 
         if film_label not in access_labels:
             raise FilmAccessError()

@@ -2,16 +2,14 @@ import json
 import logging
 from typing import Any
 
-from redis.asyncio import Redis
 from elasticsearch import AsyncElasticsearch
+from redis.asyncio import Redis
 
 
 class BaseService:
     logger: logging.Logger = logging.getLogger(__name__)
 
-    def __init__(
-        self, redis: Redis, elastic: AsyncElasticsearch, index: str, cache_ttl: int = 300
-    ):
+    def __init__(self, redis: Redis, elastic: AsyncElasticsearch, index: str, cache_ttl: int = 300):
         self._index = index
         self._redis = redis
         self._elastic = elastic

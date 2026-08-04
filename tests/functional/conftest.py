@@ -67,7 +67,7 @@ def es_destroy_mock_data(es_client: AsyncElasticsearch):
         )
         if response.get("failures"):
             raise Exception(
-                f"Ошибка удаления данных в индексе {index}: ", f'{response["failures"]}'
+                f"Ошибка удаления данных в индексе {index}: ", f"{response['failures']}"
             )
 
     return inner
@@ -93,7 +93,7 @@ async def clear_index(request, es_client: AsyncElasticsearch):
     )
     if response.get("failures"):
         raise Exception(
-            f"Ошибка удаления данных в индексе {index_name}: ", f'{response["failures"]}'
+            f"Ошибка удаления данных в индексе {index_name}: ", f"{response['failures']}"
         )
 
 

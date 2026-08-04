@@ -2,6 +2,7 @@ from http import HTTPStatus
 from typing import Any
 
 import pytest
+
 from tests.functional.settings import es_test_settings
 
 FILM_IDS: tuple[str, ...] = (
@@ -153,7 +154,6 @@ async def test_get_films_by_id_cached(
     await es_mock_data(es_test_settings.movies_index, ES_DATA)
 
     for id_ in FILM_IDS:
-
         es_body, status = await make_get_request(f"/api/v1/films/{id_}")
 
         assert status == HTTPStatus.OK
