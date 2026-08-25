@@ -49,6 +49,7 @@ Indexes and documents are created and updated by the ETL service.
 - Elasticsearch 8.x
 - Redis
 - Gunicorn + Uvicorn workers (production)
+- Multiprocess-safe structured JSON file logging
 - [uv](https://docs.astral.sh/uv/) for local dependency management
 
 Optional integration with an external auth service via RS256 JWT. Access tokens are verified with the public key from `PUBLIC_KEY_PATH`. Send the token in the `Authorization: Bearer <token>` header on film detail requests when access beyond `free` content is required.
@@ -58,6 +59,20 @@ Optional integration with an external auth service via RS256 JWT. Access tokens 
 Copy `.env.example` to `.env` and adjust values for your environment.
 
 Key settings: `REDIS_HOST`, `ELASTIC_HOST`, `PUBLIC_KEY_PATH`, `CACHE_TTL`, index names (`FILM_INDEX`, `GENRE_INDEX`, `PERSON_INDEX`).
+
+Logging settings:
+
+| Variable | Description |
+|----------|-------------|
+| `LOG_FILE_PATH` | Enable structured file logging and set the active JSON log path; unset to keep console-only logging |
+| `LOG_MAX_BYTES` | Rotate the active log after this many bytes (default: 10 MiB) |
+| `LOG_BACKUP_COUNT` | Number of rotated files retained (default: 7) |
+
+## Logging and ELK
+
+Console logging remains enabled for `docker compose logs`. When `LOG_FILE_PATH` is set, the service also writes one JSON object per line through a multiprocess-safe rotating handler. Events include timestamp, level, logger, message, process ID, and exception details.
+
+The portfolio Compose stack sets `LOG_FILE_PATH=/var/log/movies-api/app.json`, mounts that directory as a named volume, and has Filebeat forward it through Logstash to daily `movies-api-YYYY.MM.dd` indexes in the logging Elasticsearch cluster. Search the events in Kibana at `http://localhost/logs/`.
 
 ## Getting started
 

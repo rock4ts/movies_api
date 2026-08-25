@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     debug: bool = False
     project_name: str = "Some project name"
     cache_ttl: int = Field(default=300, validation_alias="CACHE_TTL", ge=1)
+    log_file_path: str | None = Field(default=None, validation_alias="LOG_FILE_PATH")
+    log_max_bytes: int = Field(
+        default=10 * 1024 * 1024,
+        validation_alias="LOG_MAX_BYTES",
+        ge=1,
+    )
+    log_backup_count: int = Field(default=7, validation_alias="LOG_BACKUP_COUNT", ge=0)
 
     film_index: str = "movies"
     genre_index: str = "genres"

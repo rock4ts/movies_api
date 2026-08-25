@@ -42,6 +42,8 @@ colorama==0.4.6 ; sys_platform == 'win32'
     #   click
     #   pytest
     #   uvicorn
+concurrent-log-handler==0.9.29
+    # via movies-api
 cryptography==44.0.0
     # via movies-api
 dnspython==2.7.0
@@ -119,6 +121,8 @@ packaging==24.2
     #   pytest
 pluggy==1.6.0
     # via pytest
+portalocker==4.2.0
+    # via concurrent-log-handler
 propcache==0.2.0
     # via
     #   movies-api
