@@ -7,10 +7,12 @@ from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 
 from app.api.v1 import router as api_v1_router
-from app.core.config import settings
+from app.core.config import sentry_settings, settings
 from app.core.logging_setup import LOGGING_CONFIG
+from app.core.sentry import configure_sentry
 
 logging.config.dictConfig(LOGGING_CONFIG)
+configure_sentry(sentry_settings, service_name="movies-api")
 
 
 app = FastAPI(

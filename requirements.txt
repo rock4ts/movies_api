@@ -30,6 +30,7 @@ certifi==2024.8.30
     #   httpcore
     #   httpx
     #   movies-api
+    #   sentry-sdk
 cffi==2.0.0 ; platform_python_implementation != 'PyPy'
     # via cryptography
 click==8.1.7
@@ -59,7 +60,9 @@ elasticsearch==8.13.2
 email-validator==2.2.0
     # via movies-api
 fastapi==0.115.0
-    # via movies-api
+    # via
+    #   movies-api
+    #   sentry-sdk
 fastapi-cli==0.0.5
     # via movies-api
 frozenlist==1.5.0
@@ -168,6 +171,8 @@ rich==13.9.4
     # via
     #   movies-api
     #   typer
+sentry-sdk==1.45.0
+    # via movies-api
 shellingham==1.5.4
     # via
     #   movies-api
@@ -198,6 +203,7 @@ urllib3==2.2.3
     # via
     #   elastic-transport
     #   movies-api
+    #   sentry-sdk
 uvicorn==0.32.0
     # via
     #   fastapi-cli

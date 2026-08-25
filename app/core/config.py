@@ -28,6 +28,13 @@ class JWTSettings(BaseSettings):
             return key_file.read()
 
 
+class SentrySettings(BaseSettings):
+    enabled: bool = Field(default=False, validation_alias="SENTRY_ENABLED")
+    dsn: str | None = Field(default=None, validation_alias="SENTRY_DSN")
+    environment: str = Field(default="development", validation_alias="SENTRY_ENVIRONMENT")
+    release: str | None = Field(default=None, validation_alias="SENTRY_RELEASE")
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict()
 
@@ -53,3 +60,4 @@ settings = Settings()
 jwt_settings = JWTSettings()
 redis_settings = RedisSettings()
 elastic_settings = ElasticSettings()
+sentry_settings = SentrySettings()
